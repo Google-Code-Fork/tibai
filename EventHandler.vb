@@ -114,12 +114,12 @@ Public Class EventHandler
             Else
                 'its a PZ lock
                 'sets a 60 second PZLocktimer if the character is PZLocked
-                myController.myMotion.myPathfinder.myMapFiles.SetPZLock(60) '1 = 1 second
+                myController.myMotion.myPathfinder.myMapData.SetPZLock(60) '1 = 1 second
 
                 tileType = 3
             End If
             'flags a tile as special
-            myController.myMotion.myPathfinder.myMapFiles.AddTiletoList(tempx, tempy, tempz, tileType)
+            myController.myMotion.myPathfinder.myMapData.AddTiletoList(tempx, tempy, tempz, tileType)
 
         End If
 

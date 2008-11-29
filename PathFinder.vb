@@ -1,5 +1,7 @@
 ﻿Public Class PathFinder
-    Public myMapFiles As MapFilesController 'the class used to get movement cost info
+    'Finds paths. It can go to a specific point or perform open ended searches.
+
+    Public myMapData As MapDataController 'the class used to get movement cost info
     Private OpenList As BinaryHeap 'the sorted list of open nodes
     Private NodeMap(,,) As Byte '0=Movement Cost 1=Parent, 2=status
     Private ScoreMap(,,) As Integer '0=GScore, 1=Heuristic
@@ -16,7 +18,7 @@
     Public Sub New(ByVal hndl As IntPtr, ByVal StepInterval As Integer)
         StepInt = StepInterval
         OpenList = New BinaryHeap()
-        myMapFiles = New MapFilesController(hndl)
+        myMapData = New MapDataController(hndl)
         ReDim NodeMap(MapX, MapY, 2)
         ReDim ScoreMap(MapX, MapY, 1)
 
@@ -135,7 +137,7 @@
                             Else 'else this neighbor is not in either the open or closed list {
                                 'add the neighbor to the open list and set its g value
 
-                                cMCost = myMapFiles.GetTileCost(cNodeX + MinX, cNodeY + MinY, StZ, &HD2, True)
+                                cMCost = myMapData.GetTileCost(cNodeX + MinX, cNodeY + MinY, StZ, &HD2, True)
 
                                 If cMCost < &HFF Then
                                     AddtoList(cNodeX, cNodeY, CByte(cMCost), CByte(8 - i), ScoreMap(tNodeX, tNodeY, 0) + (cMCost * DiagMod), GetH(cNodeX, cNodeY, EndX, EndY))
@@ -232,7 +234,7 @@
             tNodeY = tNode - (tNodeX * MapX)
             'if (this node is a goal) {
 
-            If myMapFiles.GetTileID(tNodeX + MinX, tNodeY + MinY, StZ) = tileID And NodeMap(tNodeX, tNodeY, 0) = tileCost Then
+            If myMapData.GetTileID(tNodeX + MinX, tNodeY + MinY, StZ) = tileID And NodeMap(tNodeX, tNodeY, 0) = tileCost Then
 
                 'then we're done
                 pathfound = True
@@ -242,7 +244,7 @@
 
                 'move the current node to the closed list and consider all of its neighbors
                 NodeMap(tNodeX, tNodeY, 2) = 2 'closes node
-                myMapFiles.GetTileCost(tNodeX + MinX, tNodeY + MinY, StZ, &HBA, True)
+                myMapData.GetTileCost(tNodeX + MinX, tNodeY + MinY, StZ, &HBA, True)
                 'for (each neighbor) {
                 For i As Integer = 0 To 8
                     If Not i = 4 Then '4 is tnode so skip it
@@ -274,13 +276,13 @@
                                 End If
                             Else 'else this neighbor is not in either the open or closed list {
                                 'add the neighbor to the open list and set its g value
-                                cMCost = myMapFiles.GetTileCost(cNodeX + MinX, cNodeY + MinY, StZ, &HD2, True)
+                                cMCost = myMapData.GetTileCost(cNodeX + MinX, cNodeY + MinY, StZ, &HD2, True)
 
                                 If cMCost < &HFF Then
                                     AddtoList(cNodeX, cNodeY, CByte(cMCost), CByte(8 - i), ScoreMap(tNodeX, tNodeY, 0) + (cMCost * DiagMod), 0)
                                 Else
                                     'This is for debug purposes.
-                                    myMapFiles.GetTileCost(cNodeX + MinX, cNodeY + MinY, StZ, &HBA, True)
+                                    myMapData.GetTileCost(cNodeX + MinX, cNodeY + MinY, StZ, &HBA, True)
                                 End If
                             End If
                         End If
@@ -362,7 +364,7 @@
 
                 'move the current node to the closed list and consider all of its neighbors
                 NodeMap(tNodeX, tNodeY, 2) = 2 'closes node
-                myMapFiles.GetTileCost(tNodeX + MinX, tNodeY + MinY, StZ, &HBA, True)
+                myMapData.GetTileCost(tNodeX + MinX, tNodeY + MinY, StZ, &HBA, True)
                 'for (each neighbor) {
                 For i As Integer = 0 To 8
                     If Not i = 4 Then '4 is tnode so skip it
@@ -394,7 +396,7 @@
                                 End If
                             Else 'else this neighbor is not in either the open or closed list {
                                 'add the neighbor to the open list and set its g value
-                                cMCost = myMapFiles.GetTileCost(cNodeX + MinX, cNodeY + MinY, StZ, &HD2, True)
+                                cMCost = myMapData.GetTileCost(cNodeX + MinX, cNodeY + MinY, StZ, &HD2, True)
                                 'if this tile is walkable then add it to the list
                                 If cMCost < &HFF Then
                                     'updates the average movement cost stored in returnvar

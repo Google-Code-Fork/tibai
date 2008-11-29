@@ -1,14 +1,14 @@
 ﻿Imports Tibia.Memory
 Imports System.Threading
-'This class manages threads for the mapfiles class
-Public Class MapFilesController
+'This class manages threads for the mapdata class
+Public Class MapDataController
     Private NextThread As Integer = -1
     Private isAvailable As Boolean = True
-    Private myMapfiles As MapFiles
+    Private myMapfiles As MapData
 
     Public Sub New(ByVal Hndl As System.IntPtr)
         WaitforControl()
-        myMapfiles = New MapFiles(Hndl)
+        myMapfiles = New MapData(Hndl)
         ReleaseControl()
     End Sub
     Public Function GetTileCost(ByVal Tx As Integer, ByVal Ty As Integer, ByVal Tz As Integer, ByVal color As Byte, ByVal blockSpecial As Boolean) As Byte
@@ -44,7 +44,7 @@ Public Class MapFilesController
         'new threads pause here if another thread is using the object
         If NextThread = -1 Then NextThread = Thread.CurrentThread.ManagedThreadId
         Do While isAvailable = False Or Not Thread.CurrentThread.ManagedThreadId = NextThread
-            'the first one in takes becomes the next one out
+            'the first one in becomes the next one out
             If NextThread = -1 Then NextThread = Thread.CurrentThread.ManagedThreadId
             Thread.Sleep(100)
         Loop
@@ -59,8 +59,8 @@ Public Class MapFilesController
     End Sub
 End Class
 
-'Controlled class
-Public Class MapFiles
+'Manages all data for movement related purposes
+Public Class MapData
     Private Maps() As Integer = New Integer(9) {&H63A6C8, &H65A770, &H67A818, &H69A8C0, &H6BA968, &H6DAA10, &H6FAAB8, &H71AB60, &H73AC08, &H75ACB0} '8.31 the map files loaded in tibia's memory
     Private MapOffset As Integer = &H14 '8.31 the location of a tile within a mapfile
     Private Handle As System.IntPtr 'used to identify the client for reading memory
@@ -332,7 +332,7 @@ Public Class MapFiles
         sMapFilename = MapsDir.FullName & baseX & baseY & zStr & ".smap"
         'Changes the tile in tibia's memory to assist tibia's automap
         Dim inmem As Integer = InMemory(Tx, Ty, Tz)
-        If inMem > -1 Then
+        If inmem > -1 Then
             'Writes a blocking value to tibia's memory
             Dim test As Integer = Maps(9)
             WriteByte(Handle, Maps(inmem) + MapOffset + tOffset + &H10000, &HFF)

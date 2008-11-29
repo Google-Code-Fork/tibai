@@ -35,19 +35,19 @@ Public Class Controller
     Public Sub Test()
         Dim WPQueue(11, 2) As Integer
         For i As Integer = 0 To 5
-            'WPQueue((i * 2), 0) = 32229
-            'WPQueue((i * 2), 1) = 31771
-            'WPQueue((i * 2), 2) = 7
-            'WPQueue((i * 2) + 1, 0) = 32606
-            'WPQueue((i * 2) + 1, 1) = 31963
-            'WPQueue((i * 2) + 1, 2) = 7
-
             WPQueue((i * 2), 0) = 32229
             WPQueue((i * 2), 1) = 31771
             WPQueue((i * 2), 2) = 7
-            WPQueue((i * 2) + 1, 0) = 32339
-            WPQueue((i * 2) + 1, 1) = 31751
+            WPQueue((i * 2) + 1, 0) = 32606
+            WPQueue((i * 2) + 1, 1) = 31963
             WPQueue((i * 2) + 1, 2) = 7
+
+            'WPQueue((i * 2), 0) = 32229
+            'WPQueue((i * 2), 1) = 31771
+            'WPQueue((i * 2), 2) = 7
+            'WPQueue((i * 2) + 1, 0) = 32339
+            'WPQueue((i * 2) + 1, 1) = 31751
+            'WPQueue((i * 2) + 1, 2) = 7
         Next
         myMotion.FollowWaypoints(WPQueue)
     End Sub

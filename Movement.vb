@@ -1,5 +1,8 @@
 ﻿Imports Tibia.Objects
 Public Class Movement
+    'Houses the capacity to perform any movement based action that a human
+    'player could perform and with all the flexibility a human could execute
+    'it with
     Public myPlayer As Player 'the player being moved
     Public myClient As Client 'the client being used
     Public myPathfinder As PathFinder 'the pathfinding algorithm

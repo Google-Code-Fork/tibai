@@ -23,3 +23,11 @@ C:\Documents and Settings\Administrator\My Documents\Projects\tibAI\tibAI\obj\Re
 C:\Documents and Settings\Administrator\My Documents\Projects\tibAI\obj\Release\tibAI.exe
 C:\Documents and Settings\Administrator\My Documents\Projects\tibAI\obj\Release\tibAI.xml
 C:\Documents and Settings\Administrator\My Documents\Projects\tibAI\obj\Release\tibAI.pdb
+C:\Documents and Settings\Administrator\My Documents\Projects\tibAI\bin\Release\TibiaAPI.dll
+C:\Documents and Settings\Administrator\My Documents\Projects\tibAI\bin\Release\tibAI.exe
+C:\Documents and Settings\Administrator\My Documents\Projects\tibAI\bin\Release\tibAI.pdb
+C:\Documents and Settings\Administrator\My Documents\Projects\tibAI\bin\Release\tibAI.xml
+C:\Documents and Settings\Administrator\My Documents\Projects\tibAI\obj\Release\ResolveAssemblyReference.cache
+C:\Documents and Settings\Administrator\My Documents\Projects\tibAI\obj\Release\tibAI.frmMain.resources
+C:\Documents and Settings\Administrator\My Documents\Projects\tibAI\obj\Release\tibAI.Resources.resources
+C:\Documents and Settings\Administrator\My Documents\Projects\tibAI\obj\Release\tibAI.vbproj.GenerateResource.Cache

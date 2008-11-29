@@ -62,6 +62,15 @@
         Dim sTime As DateTime
         sTime = Now 'tracks how long this action took
         Dim ReturnVar(0, 2) As Integer
+        'if the start and end coordinates are the same
+        If StX = EndX And StY = EndY And StZ = EndZ Then
+            ReturnVar(0, 0) = StX
+            ReturnVar(0, 1) = StY
+            ReturnVar(0, 2) = StZ
+            OpenedCount = 1
+            LastActionTime = CInt((Now.Ticks - sTime.Ticks) / System.TimeSpan.TicksPerMillisecond)
+            Return ReturnVar
+        End If
         Dim tNode, tNodeX, tNodeY, cNodeX, cNodeY, cMCost, DiagMod As Integer
         HeuristicBaseCost = CByte((GetSample(StX, StY, StZ) + GetSample(EndX, EndY, EndZ)) / 2)
         If HeuristicBaseCost + &H10 < &HFA Then
@@ -198,6 +207,7 @@
             'returns nothing if a path isn't found
             ReturnVar = Nothing
         End If
+        'sets lastactiontime to the processing time of this function
         LastActionTime = CInt((Now.Ticks - sTime.Ticks) / System.TimeSpan.TicksPerMillisecond)
         Return ReturnVar
     End Function

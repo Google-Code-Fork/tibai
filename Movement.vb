@@ -89,7 +89,7 @@ Public Class Movement
             '*last 5 steps we can start doing other things. This reduces 
             '*the pause at the end of a path and results in much smoother
             '*operation.
-            If Math.Abs(myPlayer.X - Queue(0, 0)) + Math.Abs(myPlayer.Y - Queue(0, 1)) < 3 Then
+            If Math.Abs(myPlayer.X - Queue(QueuePtr, 0)) + Math.Abs(myPlayer.Y - Queue(QueuePtr, 1)) < 3 Then
                 'current destination reached
                 If isPrepared = True Then
                     'Another path is available to be pursued

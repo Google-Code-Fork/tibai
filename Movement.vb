@@ -3,6 +3,14 @@ Public Class Movement
     'Houses the capacity to perform any movement based action that a human
     'player could perform and with all the flexibility a human could execute
     'it with
+    '1) Improve the isPZlocked check. It's very rudimentary right now.
+    '2) Create a grid based highway to minimize the search area and reduce the search time
+    '3) Create a supernode based highway to facilitate tibia-wide paths
+    '4) Add a high-level pathfinder to find paths between supernodes and grids
+    '5) Add ability to check for other non-qualified steps such as premmy and level switches
+    '7) Expand my movement class to handle all useful movements
+    '8) Add the capacity to Pause a movement to be resumed later or terminate it completely
+    '9) Add level-change tile mapping for searching the whole map
     Public myPlayer As Player 'the player being moved
     Public myClient As Client 'the client being used
     Public myPathfinder As PathFinder 'the pathfinding algorithm

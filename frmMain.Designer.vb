@@ -22,93 +22,146 @@ Partial Class frmMain
     'Do not modify it using the code editor.
     <System.Diagnostics.DebuggerStepThrough()> _
     Private Sub InitializeComponent()
+        Me.lblX = New System.Windows.Forms.Label
+        Me.txtX = New System.Windows.Forms.TextBox
+        Me.txtY = New System.Windows.Forms.TextBox
+        Me.Label1 = New System.Windows.Forms.Label
+        Me.txtZ = New System.Windows.Forms.TextBox
+        Me.Label2 = New System.Windows.Forms.Label
+        Me.btnAddtoList = New System.Windows.Forms.Button
+        Me.ListBox1 = New System.Windows.Forms.ListBox
+        Me.btnStartQueue = New System.Windows.Forms.Button
         Me.Button1 = New System.Windows.Forms.Button
         Me.Button2 = New System.Windows.Forms.Button
-        Me.ListBox1 = New System.Windows.Forms.ListBox
-        Me.GetXYZ = New System.Windows.Forms.Button
-        Me.Label1 = New System.Windows.Forms.Label
-        Me.Label2 = New System.Windows.Forms.Label
         Me.SuspendLayout()
         '
-        'Button1
+        'lblX
         '
-        Me.Button1.Location = New System.Drawing.Point(12, 12)
-        Me.Button1.Name = "Button1"
-        Me.Button1.Size = New System.Drawing.Size(75, 23)
-        Me.Button1.TabIndex = 0
-        Me.Button1.Text = "Button1"
-        Me.Button1.UseVisualStyleBackColor = True
+        Me.lblX.AutoSize = True
+        Me.lblX.Location = New System.Drawing.Point(12, 9)
+        Me.lblX.Name = "lblX"
+        Me.lblX.Size = New System.Drawing.Size(14, 13)
+        Me.lblX.TabIndex = 0
+        Me.lblX.Text = "X"
         '
-        'Button2
+        'txtX
         '
-        Me.Button2.Location = New System.Drawing.Point(12, 41)
-        Me.Button2.Name = "Button2"
-        Me.Button2.Size = New System.Drawing.Size(75, 23)
-        Me.Button2.TabIndex = 1
-        Me.Button2.Text = "Button2"
-        Me.Button2.UseVisualStyleBackColor = True
+        Me.txtX.CausesValidation = False
+        Me.txtX.Location = New System.Drawing.Point(32, 6)
+        Me.txtX.Name = "txtX"
+        Me.txtX.Size = New System.Drawing.Size(67, 20)
+        Me.txtX.TabIndex = 1
         '
-        'ListBox1
+        'txtY
         '
-        Me.ListBox1.FormattingEnabled = True
-        Me.ListBox1.Location = New System.Drawing.Point(102, 31)
-        Me.ListBox1.Name = "ListBox1"
-        Me.ListBox1.ScrollAlwaysVisible = True
-        Me.ListBox1.Size = New System.Drawing.Size(174, 186)
-        Me.ListBox1.TabIndex = 3
-        '
-        'GetXYZ
-        '
-        Me.GetXYZ.Location = New System.Drawing.Point(12, 70)
-        Me.GetXYZ.Name = "GetXYZ"
-        Me.GetXYZ.Size = New System.Drawing.Size(75, 23)
-        Me.GetXYZ.TabIndex = 4
-        Me.GetXYZ.TabStop = False
-        Me.GetXYZ.Text = "GetXYZ"
-        Me.GetXYZ.UseVisualStyleBackColor = True
+        Me.txtY.CausesValidation = False
+        Me.txtY.Location = New System.Drawing.Point(32, 32)
+        Me.txtY.Name = "txtY"
+        Me.txtY.Size = New System.Drawing.Size(67, 20)
+        Me.txtY.TabIndex = 3
         '
         'Label1
         '
         Me.Label1.AutoSize = True
-        Me.Label1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle
-        Me.Label1.Location = New System.Drawing.Point(99, 15)
+        Me.Label1.Location = New System.Drawing.Point(12, 35)
         Me.Label1.Name = "Label1"
-        Me.Label1.Size = New System.Drawing.Size(84, 15)
-        Me.Label1.TabIndex = 5
-        Me.Label1.Text = "Opened Nodes:"
+        Me.Label1.Size = New System.Drawing.Size(14, 13)
+        Me.Label1.TabIndex = 2
+        Me.Label1.Text = "Y"
+        '
+        'txtZ
+        '
+        Me.txtZ.CausesValidation = False
+        Me.txtZ.Location = New System.Drawing.Point(32, 58)
+        Me.txtZ.Name = "txtZ"
+        Me.txtZ.Size = New System.Drawing.Size(67, 20)
+        Me.txtZ.TabIndex = 5
         '
         'Label2
         '
         Me.Label2.AutoSize = True
-        Me.Label2.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle
-        Me.Label2.Location = New System.Drawing.Point(99, 220)
+        Me.Label2.Location = New System.Drawing.Point(12, 61)
         Me.Label2.Name = "Label2"
-        Me.Label2.Size = New System.Drawing.Size(72, 15)
-        Me.Label2.TabIndex = 6
-        Me.Label2.Text = "Search Time:"
+        Me.Label2.Size = New System.Drawing.Size(14, 13)
+        Me.Label2.TabIndex = 4
+        Me.Label2.Text = "Z"
+        '
+        'btnAddtoList
+        '
+        Me.btnAddtoList.Location = New System.Drawing.Point(24, 84)
+        Me.btnAddtoList.Name = "btnAddtoList"
+        Me.btnAddtoList.Size = New System.Drawing.Size(75, 23)
+        Me.btnAddtoList.TabIndex = 6
+        Me.btnAddtoList.Text = "Add to List"
+        Me.btnAddtoList.UseVisualStyleBackColor = True
+        '
+        'ListBox1
+        '
+        Me.ListBox1.FormattingEnabled = True
+        Me.ListBox1.Location = New System.Drawing.Point(105, 6)
+        Me.ListBox1.Name = "ListBox1"
+        Me.ListBox1.Size = New System.Drawing.Size(109, 134)
+        Me.ListBox1.TabIndex = 7
+        '
+        'btnStartQueue
+        '
+        Me.btnStartQueue.Location = New System.Drawing.Point(24, 117)
+        Me.btnStartQueue.Name = "btnStartQueue"
+        Me.btnStartQueue.Size = New System.Drawing.Size(75, 23)
+        Me.btnStartQueue.TabIndex = 8
+        Me.btnStartQueue.Text = "Start Queue"
+        Me.btnStartQueue.UseVisualStyleBackColor = True
+        '
+        'Button1
+        '
+        Me.Button1.Location = New System.Drawing.Point(24, 146)
+        Me.Button1.Name = "Button1"
+        Me.Button1.Size = New System.Drawing.Size(189, 23)
+        Me.Button1.TabIndex = 9
+        Me.Button1.Text = "Get Players Coordinates"
+        Me.Button1.UseVisualStyleBackColor = True
+        '
+        'Button2
+        '
+        Me.Button2.Location = New System.Drawing.Point(220, 6)
+        Me.Button2.Name = "Button2"
+        Me.Button2.Size = New System.Drawing.Size(75, 23)
+        Me.Button2.TabIndex = 10
+        Me.Button2.Text = "Clear List"
+        Me.Button2.UseVisualStyleBackColor = True
         '
         'frmMain
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
-        Me.ClientSize = New System.Drawing.Size(292, 266)
-        Me.Controls.Add(Me.Label2)
-        Me.Controls.Add(Me.Label1)
-        Me.Controls.Add(Me.GetXYZ)
-        Me.Controls.Add(Me.ListBox1)
+        Me.ClientSize = New System.Drawing.Size(300, 266)
         Me.Controls.Add(Me.Button2)
         Me.Controls.Add(Me.Button1)
+        Me.Controls.Add(Me.btnStartQueue)
+        Me.Controls.Add(Me.ListBox1)
+        Me.Controls.Add(Me.btnAddtoList)
+        Me.Controls.Add(Me.txtZ)
+        Me.Controls.Add(Me.Label2)
+        Me.Controls.Add(Me.txtY)
+        Me.Controls.Add(Me.Label1)
+        Me.Controls.Add(Me.txtX)
+        Me.Controls.Add(Me.lblX)
         Me.Name = "frmMain"
         Me.Text = "TibiaAI"
         Me.ResumeLayout(False)
         Me.PerformLayout()
 
     End Sub
+    Friend WithEvents lblX As System.Windows.Forms.Label
+    Friend WithEvents txtX As System.Windows.Forms.TextBox
+    Friend WithEvents txtY As System.Windows.Forms.TextBox
+    Friend WithEvents Label1 As System.Windows.Forms.Label
+    Friend WithEvents txtZ As System.Windows.Forms.TextBox
+    Friend WithEvents Label2 As System.Windows.Forms.Label
+    Friend WithEvents btnAddtoList As System.Windows.Forms.Button
+    Friend WithEvents ListBox1 As System.Windows.Forms.ListBox
+    Friend WithEvents btnStartQueue As System.Windows.Forms.Button
     Friend WithEvents Button1 As System.Windows.Forms.Button
     Friend WithEvents Button2 As System.Windows.Forms.Button
-    Friend WithEvents ListBox1 As System.Windows.Forms.ListBox
-    Friend WithEvents GetXYZ As System.Windows.Forms.Button
-    Friend WithEvents Label1 As System.Windows.Forms.Label
-    Friend WithEvents Label2 As System.Windows.Forms.Label
 
 End Class

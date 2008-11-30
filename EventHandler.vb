@@ -65,6 +65,14 @@ Public Class EventHandler
                 myPath.Path(0) = 7 'down
             ElseIf packets.Data(2) = 104 Then
                 myPath.Path(0) = 5 'left
+            ElseIf packets.Data(2) = 106 Then
+                myPath.Path(0) = 2 'up-right
+            ElseIf packets.Data(2) = 107 Then
+                myPath.Path(0) = 8 'down-right
+            ElseIf packets.Data(2) = 108 Then
+                myPath.Path(0) = 6 'down-left
+            ElseIf packets.Data(2) = 109 Then
+                myPath.Path(0) = 4 'up-left
             End If
         End If
         Return True

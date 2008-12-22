@@ -294,7 +294,7 @@ Public Class MapData
         fStream = New System.IO.FileStream(SmapsDetail(fLoc), IO.FileMode.Open, IO.FileAccess.ReadWrite)
         'writes to the filestream
         binWriter = New System.IO.BinaryWriter(fStream)
-        binWriter.Write(SmapsLoaded(fLoc), 0, &HFFFF)
+        binWriter.Write(SmapsLoaded(fLoc), 0, &H10000)
         'closes the filestream
         fStream.Flush()
         fStream.Close()
@@ -393,7 +393,7 @@ Public Class MapData
                 fStream = New System.IO.FileStream(sMapFilename, IO.FileMode.OpenOrCreate, IO.FileAccess.ReadWrite, IO.FileShare.None)
                 'fills the file with blank data
                 binWriter = New System.IO.BinaryWriter(fStream)
-                binWriter.Write(EmptyFile, 0, &HFFFF)
+                binWriter.Write(EmptyFile, 0, &H10000)
                 'closes the stream
                 fStream.Flush()
                 fStream.Close()
@@ -599,13 +599,14 @@ Public Class MapData
                         ReDim MFO.Map(65535) 'The tibia style map that records which tiles are assigned to which hubs
 
                         For tile As Integer = 0 To UBound(MFO.Map)
+
+
+
                             If MFO.Map(tile) = 0 Then 'its unassigned
                                 'Gets the MacroTile number(0-255 proceeding north to south then west to east)
                                 MacroTileNumber = CInt(Math.Truncate(Math.Truncate(tile / 256) / 16) * 16)
                                 MacroTileNumber += CInt(Math.Truncate((tile - (Math.Truncate(tile / 256) * 256)) / 16))
-                                If MacroTileNumber = 78 Then
-                                    Application.DoEvents()
-                                End If
+
                                 'Gets the hubID for the marknodes sub
                                 If MFO.MacroTiles(MacroTileNumber) Is Nothing Then
                                     'if there are no current hubs then the hub id is 1
@@ -615,6 +616,7 @@ Public Class MapData
                                     HubID = MFO.MacroTiles(MacroTileNumber).Count + 1
                                 End If
                                 'Mark all the tiles
+
                                 If myPathfinder.MarkNodes(tile, MFO.Map, CByte(HubID), MacroTileNumber, sMapX, sMapY, sMapZ, Me) Then
                                     'Dimension the hub
                                     If MFO.MacroTiles(MacroTileNumber) Is Nothing Then

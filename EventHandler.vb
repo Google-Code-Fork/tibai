@@ -16,8 +16,7 @@ Public Class EventHandler
     Public myController As Controller 'the central class that contains all relevant objects
     Dim WithEvents client As Tibia.Objects.Client
     Dim WithEvents proxy As Tibia.Util.Proxy
-    Public NeedsInit As Boolean = True
-
+    Public NeedsInit As Boolean
 
     Public Sub New(ByRef con As Controller)
         'sets up the global variables
@@ -97,10 +96,13 @@ Public Class EventHandler
 
     Public Function ReceivedMessageFromServerEvent() As Boolean Handles proxy.ReceivedMessageFromServer
 
-        If client.LoggedIn And NeedsInit Then
-            NeedsInit = False
-            myController.myPlayer = myController.myClient.GetPlayer
-            myController.myMovement = New Movement(myController.myClient, myController.myPlayer, myController)
+        If client.LoggedIn Then
+            If NeedsInit Then
+                Application.DoEvents()
+                NeedsInit = False
+                myController.myPlayer = myController.myClient.GetPlayer
+                myController.myMovement = New Movement(myController.myClient, myController.myPlayer, myController)
+            End If
         Else
             NeedsInit = True
         End If

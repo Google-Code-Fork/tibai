@@ -14,77 +14,37 @@ Public Class EventHandler
     End Structure
     Public myPath As CurrentPath 'Contains info on the last movement packet sent
     Public myController As Controller 'the central class that contains all relevant objects
+    Dim WithEvents client As Tibia.Objects.Client
+    Dim WithEvents proxy As Tibia.Util.Proxy
+    Public NeedsInit As Boolean = True
+
 
     Public Sub New(ByRef con As Controller)
         'sets up the global variables
         myController = con
         ReDim myPath.Path(10)
 
-        'If the proxy is initialized
-        If Not myController.myClient.Proxy Is Nothing Then
-            'Starts Event Handlers
-            myController.myClient.Proxy.OnLogIn = New Proxy.ProxyNotification(AddressOf OnLogInEvent)
-            myController.myClient.Proxy.ReceivedPacketFromClient = New Proxy.PacketListener(AddressOf PacketFromClientEvent)
-            myController.myClient.Proxy.ReceivedStatusMessagePacket = New Proxy.PacketListener(AddressOf StatusMessageEvent)
-        End If
+        'Initializes the client and proxy objects
+        client = myController.myClient
+        proxy = client.Proxy
     End Sub
-    Public Function OnLogInEvent(ByVal msg As String) As Boolean
-        If myController.myClient.LoggedIn Then
-            myController.myPlayer = myController.myClient.GetPlayer
-            myController.myMotion = New Movement(myController.myClient, myController.myPlayer)
-        Else
-            Exit Function
-        End If
-        Return True
-    End Function
-    Public Function PacketFromClientEvent(ByVal packets As Packet) As Boolean
-        'This function handles events raised when the client sends a packet
 
-        'Exits the sub if not logged in
-        If Not myController.myClient.LoggedIn Then Exit Function
-        'This part looks for movement packets
-        If packets.Data(2) > 99 And packets.Data(2) < 105 Then
-            'First it records the originating location
-            myPath.StartLocation_X = myController.myPlayer.X
-            myPath.StartLocation_Y = myController.myPlayer.Y
-            myPath.StartLocation_Z = myController.myPlayer.Z
-            myPath.PathLength = 1 'sets the path length to 1 by default
-            'fills the packet with path data based on the type of packet
-            '100 = multimove packet
-            '101 = up, 102 = right, 103 = down, 104 = left
-            If packets.Data(2) = 100 Then
-                myPath.PathLength = packets.Data(3) - 1
-                For i As Integer = 4 To UBound(packets.Data)
-                    myPath.Path(i - 4) = packets.Data(i)
-                Next
-            ElseIf packets.Data(2) = 101 Then
-                myPath.Path(0) = 3 'up
-            ElseIf packets.Data(2) = 102 Then
-                myPath.Path(0) = 1 'right
-            ElseIf packets.Data(2) = 103 Then
-                myPath.Path(0) = 7 'down
-            ElseIf packets.Data(2) = 104 Then
-                myPath.Path(0) = 5 'left
-            ElseIf packets.Data(2) = 106 Then
-                myPath.Path(0) = 2 'up-right
-            ElseIf packets.Data(2) = 107 Then
-                myPath.Path(0) = 8 'down-right
-            ElseIf packets.Data(2) = 108 Then
-                myPath.Path(0) = 6 'down-left
-            ElseIf packets.Data(2) = 109 Then
-                myPath.Path(0) = 4 'up-left
-            End If
-        End If
+    Public Function ReceivedMoveOutgoingPacketEvent(ByVal packets As OutgoingPacket) As Boolean Handles proxy.ReceivedMoveOutgoingPacket
+        RecordMovement(packets.ToByteArray)
         Return True
     End Function
-    Public Function StatusMessageEvent(ByVal packets As Packet) As Boolean
+    Public Function ReceivedAutoWalkOutgoingPacketEvent(ByVal packets As OutgoingPacket) As Boolean Handles proxy.ReceivedAutoWalkOutgoingPacket
+        RecordMovement(packets.ToByteArray)
+        Return True
+    End Function
+    Public Function ReceivedTextMessageIncomingPacketEvent(ByVal packets As Tibia.Packets.IncomingPacket) As Boolean Handles proxy.ReceivedTextMessageIncomingPacket
         'This function handles events raised when the server sends a status 
         'message
 
-        'Exits the sub if not logged in
-        If Not myController.myClient.LoggedIn Then Exit Function
 
-        Dim p As New Tibia.Packets.StatusMessagePacket(myController.myClient, packets.Data)
+        Dim p As Tibia.Packets.Incoming.TextMessagePacket
+        p = CType(packets, Tibia.Packets.Incoming.TextMessagePacket)
+
 
         'Checks for messages associated with invalid moves
         If p.Message = "You are not invited." Or p.Message = "Characters who attacked other players may not enter a protection zone." Then
@@ -122,12 +82,12 @@ Public Class EventHandler
             Else
                 'its a PZ lock
                 'sets a 60 second PZLocktimer if the character is PZLocked
-                myController.myMotion.myPathfinder.myMapData.SetPZLock(60) '1 = 1 second
+                myController.myPathfinder.myMapData.SetPZLock(60) '1 = 1 second
 
                 tileType = 3
             End If
             'flags a tile as special
-            myController.myMotion.myPathfinder.myMapData.AddTiletoList(tempx, tempy, tempz, tileType)
+            myController.myPathfinder.myMapData.AddTiletoList(tempx, tempy, tempz, tileType)
 
         End If
 
@@ -135,4 +95,48 @@ Public Class EventHandler
         Return True
     End Function
 
+    Public Function ReceivedMessageFromServerEvent() As Boolean Handles proxy.ReceivedMessageFromServer
+
+        If client.LoggedIn And NeedsInit Then
+            NeedsInit = False
+            myController.myPlayer = myController.myClient.GetPlayer
+            myController.myMovement = New Movement(myController.myClient, myController.myPlayer, myController)
+        Else
+            NeedsInit = True
+        End If
+        Return True
+    End Function
+
+    Private Sub RecordMovement(ByVal data() As Byte)
+        'This function handles outgoing movement events
+        'First it records the originating location
+        myPath.StartLocation_X = myController.myPlayer.X
+        myPath.StartLocation_Y = myController.myPlayer.Y
+        myPath.StartLocation_Z = myController.myPlayer.Z
+        myPath.PathLength = 1 'sets the path length to 1 by default
+        'fills the packet with path data based on the type of packet
+        '100 = multimove packet
+        If data(0) = 100 Then
+            myPath.PathLength = data(1) - 1
+            For i As Integer = 2 To UBound(data)
+                myPath.Path(i - 2) = data(i)
+            Next
+        ElseIf data(0) = 101 Then
+            myPath.Path(0) = 3 'up
+        ElseIf data(0) = 102 Then
+            myPath.Path(0) = 1 'right
+        ElseIf data(0) = 103 Then
+            myPath.Path(0) = 7 'down
+        ElseIf data(0) = 104 Then
+            myPath.Path(0) = 5 'left
+        ElseIf data(0) = 106 Then
+            myPath.Path(0) = 2 'up-right
+        ElseIf data(0) = 107 Then
+            myPath.Path(0) = 8 'down-right
+        ElseIf data(0) = 108 Then
+            myPath.Path(0) = 6 'down-left
+        ElseIf data(0) = 109 Then
+            myPath.Path(0) = 4 'up-left
+        End If
+    End Sub
 End Class

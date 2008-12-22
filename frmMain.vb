@@ -1,6 +1,6 @@
 ﻿
 Public Class frmMain
-    Public myController As New Controller
+    Public myController As New Controller()
     Public XQueue(0), YQueue(0), ZQueue(0) As Integer
 
     Private Sub frmMain_Load(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles MyBase.Load
@@ -8,8 +8,6 @@ Public Class frmMain
 
     End Sub
 
-
-    
     Private Sub btnAddtoList_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnAddtoList.Click
         If Not Val(txtX.Text) > 31744 Or Not Val(txtX.Text) < 31744 + 1792 Then Exit Sub
         If Not Val(txtY.Text) > 30976 Or Not Val(txtY.Text) < 30976 + 2048 Then Exit Sub
@@ -60,6 +58,28 @@ Public Class frmMain
         ReDim XQueue(0)
         ReDim YQueue(0)
         ReDim ZQueue(0)
+    End Sub
+
+
+    Private Sub btnTest1_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnTest1.Click
+        ListBox1.Items.Add("32606, 31967, 7")
+        ListBox1.Items.Add("32209, 31755, 7")
+        If Not XQueue(0) = 0 Then
+            ReDim Preserve XQueue(UBound(XQueue) + 1)
+            ReDim Preserve YQueue(UBound(YQueue) + 1)
+            ReDim Preserve ZQueue(UBound(ZQueue) + 1)
+        End If
+        XQueue(UBound(XQueue)) = 32606
+        YQueue(UBound(YQueue)) = 31967
+        ZQueue(UBound(ZQueue)) = 7
+        If Not XQueue(0) = 0 Then
+            ReDim Preserve XQueue(UBound(XQueue) + 1)
+            ReDim Preserve YQueue(UBound(YQueue) + 1)
+            ReDim Preserve ZQueue(UBound(ZQueue) + 1)
+        End If
+        XQueue(UBound(XQueue)) = 32209
+        YQueue(UBound(YQueue)) = 31755
+        ZQueue(UBound(ZQueue)) = 7
     End Sub
 End Class
 

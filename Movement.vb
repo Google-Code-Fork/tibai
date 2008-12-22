@@ -11,14 +11,13 @@ Public Class Movement
     '7) Expand my movement class to handle all useful movements
     '8) Add the capacity to Pause a movement to be resumed later or terminate it completely
     '9) Add level-change tile mapping for searching the whole map
+    Public myController As Controller
     Public myPlayer As Player 'the player being moved
     Public myClient As Client 'the client being used
-    Public myPathfinder As PathFinder 'the pathfinding algorithm
-    Private StepInt As Integer = 100 'distance in steps between waypoints
-    Public Sub New(ByRef Cli As Client, ByRef Pla As Player)
+    Public Sub New(ByRef Cli As Client, ByRef Pla As Player, ByRef Con As Controller)
         myClient = Cli
         myPlayer = Pla
-        myPathfinder = New PathFinder(myClient.Process.Handle, StepInt)
+        myController = Con
     End Sub
     Public Function GotoXYZ(ByVal X As Integer, ByVal Y As Integer, ByVal Z As Integer) As Boolean
         'Goes to single XYZ coordinate
@@ -50,9 +49,9 @@ Public Class Movement
 
             'skips if a path was found from the nextdest coordinates
             If Not skipsearch = True Then
-                tpath = myPathfinder.GetPath(myPlayer.X, myPlayer.Y, myPlayer.Z, Queue(QueuePtr, 0), Queue(QueuePtr, 1), Queue(QueuePtr, 2))
+                tpath = myController.myPathfinder.GetPath(myPlayer.X, myPlayer.Y, myPlayer.Z, Queue(QueuePtr, 0), Queue(QueuePtr, 1), Queue(QueuePtr, 2))
                 If tpath Is Nothing Then StatusMessage = "Path Not Found" Else StatusMessage = "Path Found"
-                StatusMessage &= ": " & myPathfinder.OpenedCount & " nodes searched in " & myPathfinder.LastActionTime & " milliseconds with " & myPathfinder.HeuristicBaseCost & " as the heuristic."
+                StatusMessage &= ": " & myController.myPathfinder.OpenedCount & " nodes searched in " & myController.myPathfinder.LastActionTime & " milliseconds with " & myController.myPathfinder.HeuristicBaseCost & " as the heuristic."
                 SendStatustoClient(StatusMessage)
                 'exits if a path isn't found
                 If tpath Is Nothing Then Exit Do
@@ -74,11 +73,13 @@ Public Class Movement
 
                     'prepare the next path if its loaded
                     If Not QueuePtr = UBound(Queue, 1) And Not isPrepared Then
-                        isPrepared = True
-                        nextpath = myPathfinder.GetPath(Queue(QueuePtr, 0), Queue(QueuePtr, 1), Queue(QueuePtr, 2), Queue(QueuePtr + 1, 0), Queue(QueuePtr + 1, 1), Queue(QueuePtr + 1, 2))
-                        If nextpath Is Nothing Then StatusMessage = "Failed to Queue Next Path" Else StatusMessage = "Successfully Queued Next Path(Waiting)"
-                        StatusMessage &= ": " & myPathfinder.OpenedCount & " nodes searched in " & myPathfinder.LastActionTime & " milliseconds with " & myPathfinder.HeuristicBaseCost & " as the heuristic."
-                        SendStatustoClient(StatusMessage)
+                        If Not myPlayer.X = Queue(QueuePtr + 1, 0) Or Not myPlayer.Y = Queue(QueuePtr + 1, 1) Or Not myPlayer.Z = Queue(QueuePtr + 1, 2) Then
+                            isPrepared = True
+                            nextpath = myController.myPathfinder.GetPath(Queue(QueuePtr, 0), Queue(QueuePtr, 1), Queue(QueuePtr, 2), Queue(QueuePtr + 1, 0), Queue(QueuePtr + 1, 1), Queue(QueuePtr + 1, 2))
+                            If nextpath Is Nothing Then StatusMessage = "Failed to Queue Next Path" Else StatusMessage = "Successfully Queued Next Path(Waiting)"
+                            StatusMessage &= ": " & myController.myPathfinder.OpenedCount & " nodes searched in " & myController.myPathfinder.LastActionTime & " milliseconds with " & myController.myPathfinder.HeuristicBaseCost & " as the heuristic."
+                            SendStatustoClient(StatusMessage)
+                        End If
                     End If
 
                     'a 15 second wait at speed 290 is fine
@@ -128,11 +129,8 @@ Public Class Movement
         Loop
     End Function
     Private Sub SendStatustoClient(ByVal Msg As String)
-        Dim packet As Tibia.Packets.StatusMessagePacket
+        Tibia.Packets.Incoming.TextMessagePacket.Send(myClient, Tibia.Packets.StatusMessage.ConsoleOrange2, Msg)
 
-        packet = Tibia.Packets.StatusMessagePacket.Create(myClient, Tibia.Packets.StatusMessageType.ConsoleRed, Msg)
 
-        'lenlo,lenhi,180,24,14,0,message
-        myClient.Send(packet)
     End Sub
 End Class

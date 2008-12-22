@@ -85,6 +85,12 @@
   <ItemGroup>
     <Compile Include="BinaryHeap.vb" />
     <Compile Include="Controller.vb" />
+    <Compile Include="frmMStatus.Designer.vb">
+      <DependentUpon>frmMStatus.vb</DependentUpon>
+    </Compile>
+    <Compile Include="frmMStatus.vb">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="EventHandler.vb" />
     <Compile Include="frmMain.vb">
       <SubType>Form</SubType>
@@ -115,6 +121,9 @@
   <ItemGroup>
     <EmbeddedResource Include="frmMain.resx">
       <DependentUpon>frmMain.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="frmMStatus.resx">
+      <DependentUpon>frmMStatus.vb</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="My Project\Resources.resx">
       <Generator>VbMyResourcesResXFileCodeGenerator</Generator>

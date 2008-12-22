@@ -33,6 +33,7 @@ Partial Class frmMain
         Me.btnStartQueue = New System.Windows.Forms.Button
         Me.Button1 = New System.Windows.Forms.Button
         Me.Button2 = New System.Windows.Forms.Button
+        Me.btnTest1 = New System.Windows.Forms.Button
         Me.SuspendLayout()
         '
         'lblX
@@ -130,11 +131,21 @@ Partial Class frmMain
         Me.Button2.Text = "Clear List"
         Me.Button2.UseVisualStyleBackColor = True
         '
+        'btnTest1
+        '
+        Me.btnTest1.Location = New System.Drawing.Point(220, 231)
+        Me.btnTest1.Name = "btnTest1"
+        Me.btnTest1.Size = New System.Drawing.Size(75, 23)
+        Me.btnTest1.TabIndex = 12
+        Me.btnTest1.Text = "XYZ Set 1"
+        Me.btnTest1.UseVisualStyleBackColor = True
+        '
         'frmMain
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
         Me.ClientSize = New System.Drawing.Size(300, 266)
+        Me.Controls.Add(Me.btnTest1)
         Me.Controls.Add(Me.Button2)
         Me.Controls.Add(Me.Button1)
         Me.Controls.Add(Me.btnStartQueue)
@@ -163,5 +174,6 @@ Partial Class frmMain
     Friend WithEvents btnStartQueue As System.Windows.Forms.Button
     Friend WithEvents Button1 As System.Windows.Forms.Button
     Friend WithEvents Button2 As System.Windows.Forms.Button
+    Friend WithEvents btnTest1 As System.Windows.Forms.Button
 
 End Class

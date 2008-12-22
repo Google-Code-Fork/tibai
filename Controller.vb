@@ -6,8 +6,10 @@ Public Class Controller
     Public myClient As Client = ClientChooser.ShowBox()
     Public myPlayer As Player
     Public myEvents As tibAI.EventHandler
-    Public myMotion As Movement
+    Public myPathfinder As PathFinder
+    Public myMovement As Movement
     Public Sub New()
+
         'Terminates if a client is not selected
         If myClient Is Nothing Then
             MsgBox("No client selected!")
@@ -20,6 +22,8 @@ Public Class Controller
             myClient.StartProxy()
             myEvents = New tibAI.EventHandler(Me)
         End If
+        myPathfinder = New PathFinder(myClient.Process.Handle, 100)
+
     End Sub
 
     Public Sub GetXYZ()
@@ -27,8 +31,7 @@ Public Class Controller
         MsgBox(myPlayer.X & ", " & myPlayer.Y & ", " & myPlayer.Z)
     End Sub
     Public Sub SubmitQueue(ByVal WPQueue As Integer(,))
-        myMotion.FollowWaypoints(WPQueue)
+        myMovement.FollowWaypoints(WPQueue)
     End Sub
- 
 
 End Class

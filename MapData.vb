@@ -1,42 +1,43 @@
 ﻿Imports Tibia.Memory
 Imports System.Threading
+Imports System.IO
 'This class manages threads for the mapdata class
 Public Class MapDataController
     Private NextThread As Integer = -1
     Private isAvailable As Boolean = True
-    Private myMapfiles As MapData
+    Private myMapData As MapData
 
-    Public Sub New(ByVal Hndl As System.IntPtr)
+    Public Sub New(ByVal Hndl As System.IntPtr, ByRef SearchAlg As PathFinder)
         WaitforControl()
-        myMapfiles = New MapData(Hndl)
+        myMapData = New MapData(Hndl, SearchAlg)
         ReleaseControl()
     End Sub
     Public Function GetTileCost(ByVal Tx As Integer, ByVal Ty As Integer, ByVal Tz As Integer, ByVal color As Byte, ByVal blockSpecial As Boolean) As Byte
         WaitforControl()
-        GetTileCost = myMapfiles.GetTileCost(Tx, Ty, Tz, color, blockSpecial)
+        GetTileCost = myMapData.GetTileCost(Tx, Ty, Tz, color, blockSpecial)
         ReleaseControl()
     End Function
     Public Function GetTileID(ByVal Tx As Integer, ByVal Ty As Integer, ByVal Tz As Integer) As Byte
         WaitforControl()
-        GetTileID = myMapfiles.GetTileID(Tx, Ty, Tz)
+        GetTileID = myMapData.GetTileID(Tx, Ty, Tz)
         ReleaseControl()
     End Function
     Public Sub AddTiletoList(ByVal Tx As Integer, ByVal Ty As Integer, ByVal Tz As Integer, ByVal type As Byte)
         WaitforControl()
-        myMapfiles.AddTiletoList(Tx, Ty, Tz, type)
+        myMapData.AddTiletoList(Tx, Ty, Tz, type)
         ReleaseControl()
     End Sub
+
     Public Sub SetPZLock(ByVal Duration As Long)
         WaitforControl()
-        myMapfiles.SetPZLock(Duration)
+        myMapData.SetPZLock(Duration)
         ReleaseControl()
     End Sub
     Public Function GetMapFileAssessment() As Integer(,)
         WaitforControl()
-        GetMapFileAssessment = myMapfiles.GetMapFileAssessment
+        GetMapFileAssessment = myMapData.GetMapFileAssessment
         ReleaseControl()
     End Function
-
     'Control Subs- Ensures obect is acted upon by one thread at a time
     'a call to these two subs exist within each of the methods above
 
@@ -61,26 +62,58 @@ End Class
 
 'Manages all data for movement related purposes
 Public Class MapData
-    Private Maps() As Integer = New Integer(9) {&H63A6C8, &H65A770, &H67A818, &H69A8C0, &H6BA968, &H6DAA10, &H6FAAB8, &H71AB60, &H73AC08, &H75ACB0} '8.31 the map files loaded in tibia's memory
-    Private MapOffset As Integer = &H14 '8.31 the location of a tile within a mapfile
+    'The Pathfinder to use when updating the macronode data files
+    Private myPathfinder As PathFinder
+
+    'Necessary client information
+    Private Maps() As Integer = New Integer(9) {&H63F588, &H65F630, &H67F6D8, &H69F780, &H6BF828, &H6DF8D0, &H6FF978, &H71FA20, &H73FAC8, &H75FB70} '8.4 the map files loaded in tibia's memory
+    Private MapOffset As Integer = &H14 '8.4 the location of a tile within a mapfile in tibia's memory
     Private Handle As System.IntPtr 'used to identify the client for reading memory
+
+    'Arrays used to store information about the map
     Private mapsLoaded(9)() As Byte 'the map files in a byte array
-    Private SmapsLoaded(9)() As Byte 'contains extra map tile details
     Private mapsDetail(9) As String 'the file name of the map in mapsloaded
-    Private SmapsDetail(9) As String 'the file name of the map in smapsloaded
     Private mapsPointer As Integer 'the position of the currently loaded map
+    Private SmapsLoaded(9)() As Byte 'contains extra map tile details
+    Private SmapsDetail(9) As String 'the file name of the map in smapsloaded
     Private SmapsPointer As Integer 'the position of the currently loaded special map
+
+    'Objects that hold macro file data
+
+    Private Structure MacroFileObj '256 bytes + Hubs
+        Dim Map() As Byte
+        Dim NameBase As String
+        Dim MacroTiles()() As HubObj
+    End Structure
+    Private Structure HubObj '4 bytes + (number of child hubs * 6 bytes)
+        Dim X As UInt16 'The x coordinate of the hub
+        Dim Y As UInt16 'The y coordinate of the hub
+        Dim ChildHubX() As UInt16 'The array of X coordinates for children hubs
+        Dim ChildHubY() As UInt16 'The array of Y coordinates for children hubs
+        Dim ChildHubDist() As UInt16 'The array of distances to children hubs from this hub
+    End Structure
+
+    'Objects used to read and write to various files
     Private binReader As System.IO.BinaryReader 'used to load a map file into tibiaAI's memory
     Private binWriter As System.IO.BinaryWriter 'used to write to special maps
     Private fStream As System.IO.FileStream 'used to load a map file into tibiaAI's memory
+
+    'Stores directory information for use when accessing files
     Private MapsDir As New System.IO.DirectoryInfo(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) & "\tibia\automap\") ' the location of the map files
+    Private MapInfoDir As String = MapsDir.FullName & "MapInfo\"
+    Private MapSFileDir As String = MapInfoDir & "SpecialTiles\"
+    Private MacroSearchDir As String = MapInfoDir & "MacroSearch\"
+
+    'Protection Zone Lock information
     Private isPZlocked As Boolean = False 'Default is false, if the player is PZLocked safety zones are ignored
     Private PZLockedSetTime As DateTime
     Private PZLockDuration As TimeSpan
 
-    Public Sub New(ByVal Hndl As System.IntPtr)
+    Public Sub New(ByVal Hndl As System.IntPtr, ByRef SearchAlg As PathFinder)
         Handle = Hndl
-
+        myPathfinder = SearchAlg
+        CreateMapDirectories()
+        UpdateMacroNodes()
     End Sub
     Public Function GetTileCost(ByVal Tx As Integer, ByVal Ty As Integer, ByVal Tz As Integer, ByVal color As Byte, ByVal blockSpecial As Boolean) As Byte
         'Returns the movement cost of a given tile- default is same as unexplored
@@ -100,7 +133,7 @@ Public Class MapData
         If Tz < 10 Then zStr = "0" & CStr(Tz) Else zStr = CStr(Tz)
         'creates the mapfile name
         MapFilename = MapsDir.FullName & baseX & baseY & zStr
-        sMapFilename = MapFilename & ".smap"
+        sMapFilename = MapSFileDir & baseX & baseY & zStr & ".smap"
         MapFilename = MapFilename & ".map"
 
         'determine if the file is stored in tibia's memory
@@ -245,6 +278,15 @@ Public Class MapData
         Next
 
     End Sub
+
+    'Data Related Methods
+    Private Sub CreateMapDirectories()
+        'Creates the directories that hold map data from TibA.I.
+        If Not My.Computer.FileSystem.DirectoryExists(MacroSearchDir) Then My.Computer.FileSystem.CreateDirectory(MacroSearchDir)
+        If Not My.Computer.FileSystem.DirectoryExists(MapSFileDir) Then My.Computer.FileSystem.CreateDirectory(MapSFileDir)
+    End Sub
+
+    'Special Tile Methods
     Private Sub saveSFile(ByVal fLoc As Integer)
         'this sub saves the special file created at fLoc so that new data is
         'recorded
@@ -299,7 +341,6 @@ Public Class MapData
             'its a door
             If inMem > -1 Then
                 'Writes a blocking value to tibia's memory
-                Dim test As Integer = Maps(9)
                 WriteByte(Handle, Maps(inMem) + MapOffset + fOffset + &H10000, &HFF)
             End If
             Return True
@@ -329,7 +370,7 @@ Public Class MapData
         tOffset = GetTileOffset(Ty) + (GetTileOffset(Tx) * 256)
         If Tz < 10 Then zStr = "0" & CStr(Tz) Else zStr = CStr(Tz)
         'creates the mapfile name
-        sMapFilename = MapsDir.FullName & baseX & baseY & zStr & ".smap"
+        sMapFilename = MapSFileDir & baseX & baseY & zStr & ".smap"
         'Changes the tile in tibia's memory to assist tibia's automap
         Dim inmem As Integer = InMemory(Tx, Ty, Tz)
         If inmem > -1 Then
@@ -381,6 +422,238 @@ Public Class MapData
         End If
 
     End Sub
+
+    'MacroSearch Related Methods
+    Private Sub LoadMacroFile(ByVal X As Integer, ByVal Y As Integer, ByVal Z As Integer)
+        'Loads the data in a .mdat file for use in tibia wide searches
+
+    End Sub
+    Private Sub SaveMacroFileObj(ByRef MFO As MacroFileObj)
+        'Saves a .mdat files and .mmap files in the appropriate format
+        Dim ByteArray() As Byte
+        Dim NumberofBytes, ByteArrayPos As Integer
+        'Compute the size of the file
+        NumberofBytes = 256 '1 for each MacroTile 
+        For Each MacroTile In MFO.MacroTiles
+            For Each Hub In MacroTile
+                NumberofBytes += 5 'adds 5 bytes for the hub
+                If Not Hub.ChildHubX Is Nothing Then
+                    NumberofBytes += UBound(Hub.ChildHubX) * 6 'adds 6 bytes per child
+                End If
+            Next
+        Next
+        'resizes the array
+        ReDim ByteArray(NumberofBytes - 1)
+
+        'Fills the information into the array
+        For i As Integer = 0 To 255
+            'The first 256 bytes are the number of hubs in each of
+            'the 16x16 tiles of each mapfile
+            ByteArray(i) = CByte(MFO.MacroTiles(i).Count)
+        Next
+        ByteArrayPos += 256 'increments the pointer
+        For Each MacroTile In MFO.MacroTiles
+            For i As Integer = 0 To UBound(MacroTile)
+                'Adds the high byte of this hubs x position
+                ByteArray(ByteArrayPos) = CByte(Math.Truncate(MacroTile(i).X / 256))
+                ByteArrayPos += 1
+                'Adds the low byte of this hubs x position
+                ByteArray(ByteArrayPos) = CByte(MacroTile(i).X - (ByteArray(ByteArrayPos - 1) * 256))
+                ByteArrayPos += 1
+                'Adds the high byte of this hubs y position
+                ByteArray(ByteArrayPos) = CByte(Math.Truncate(MacroTile(i).Y / 256))
+                ByteArrayPos += 1
+                'Adds the low byte of this hubs y position
+                ByteArray(ByteArrayPos) = CByte(MacroTile(i).Y - (ByteArray(ByteArrayPos - 1) * 256))
+                ByteArrayPos += 1
+
+                'Adds a byte containing the number of children for this hub
+                If Not MacroTile(i).ChildHubX Is Nothing Then
+                    ByteArray(ByteArrayPos) = CByte(MacroTile(i).ChildHubX.Count)
+                End If
+                ByteArrayPos += 1
+                If Not MacroTile(i).ChildHubX Is Nothing Then
+                    For n As Integer = 0 To UBound(MacroTile(i).ChildHubX)
+                        'Adds the high byte of this child hubs x position
+                        ByteArray(ByteArrayPos) = CByte(Math.Truncate(MacroTile(i).ChildHubX(n) / 256))
+                        ByteArrayPos += 1
+                        'Adds the low byte of this child hubs x position
+                        ByteArray(ByteArrayPos) = CByte(MacroTile(i).ChildHubX(n) - (ByteArray(ByteArrayPos - 1) * 256))
+                        ByteArrayPos += 1
+                        'Adds the high byte of this child hubs y position
+                        ByteArray(ByteArrayPos) = CByte(Math.Truncate(MacroTile(i).ChildHubY(n) / 256))
+                        ByteArrayPos += 1
+                        'Adds the low byte of this child hubs y position
+                        ByteArray(ByteArrayPos) = CByte(MacroTile(i).ChildHubY(n) - (ByteArray(ByteArrayPos - 1) * 256))
+                        ByteArrayPos += 1
+                        'Adds the high byte of this child hubs distance
+                        ByteArray(ByteArrayPos) = CByte(Math.Truncate(MacroTile(i).ChildHubDist(n) / 256))
+                        ByteArrayPos += 1
+                        'Adds the low byte of this child hubs distance
+                        ByteArray(ByteArrayPos) = CByte(MacroTile(i).ChildHubDist(n) - (ByteArray(ByteArrayPos - 1) * 256))
+                        ByteArrayPos += 1
+                    Next
+                End If
+            Next
+        Next
+
+
+        'Saves both arrays to their respective files
+        Dim Stream As FileStream
+        'saves the macro tile data file
+        Stream = New FileStream(MacroSearchDir & MFO.NameBase & ".mdat", FileMode.Create, FileAccess.Write)
+        Stream.Write(ByteArray, 0, ByteArray.Count)
+        Stream.Flush()
+        Stream.Close()
+        'saves the macro map file
+        Stream = New FileStream(MacroSearchDir & MFO.NameBase & ".mmap", FileMode.Create, FileAccess.Write)
+        Stream.Write(MFO.Map, 0, MFO.Map.Count)
+        Stream.Flush()
+        Stream.Close()
+
+    End Sub
+    Private Sub UpdateMacroNodes()
+        Exit Sub
+        'Checks for missing or outdated macro search files and updates them
+        Dim Path As String
+        Dim MFO As MacroFileObj
+        Dim MacroTileNumber, HubID As Integer
+        Dim sMapX, sMapY, sMapZ As Integer
+        Dim mdatInfo, mapInfo As FileInfo
+        Dim zStr As String
+        frmMStatus.Show()
+
+        'Gets map size details from the pathfinder object
+        Dim MapX As Integer = myPathfinder.MapX
+        Dim MapY As Integer = myPathfinder.MapY
+        Dim MinX As Integer = myPathfinder.MinX
+        Dim MinY As Integer = myPathfinder.MinY
+
+        'Gets a count of how many files need to be updated
+        Dim UpdateCount As Integer
+        For MacrX As Integer = CInt(MinX / 256) To CInt((MinX + MapX) / 256) - 1
+            For MacrY As Integer = CInt(MinY / 256) To CInt((MinY + MapY) / 256) - 1
+                For MacrZ As Integer = 0 To 15
+                    If MacrZ < 10 Then zStr = "0" & CStr(MacrZ) Else zStr = CStr(MacrZ)
+                    MFO.NameBase = CStr(MacrX) & CStr(MacrY) & zStr
+                    'gets the map data
+                    Path = MapsDir.FullName & "\" & CStr(MacrX) & CStr(MacrY) & zStr & ".map"
+                    sMapX = MacrX * 256
+                    sMapY = MacrY * 256
+                    sMapZ = MacrZ
+                    'if the mdat file is missing or out of date then
+                    mapInfo = New FileInfo(MapsDir.FullName & MacrX & MacrY & zStr & ".map")
+                    mdatInfo = New FileInfo(MacroSearchDir & MacrX & MacrY & zStr & ".mdat")
+                    If Not mdatInfo.Exists Or mapInfo.LastWriteTime > mdatInfo.LastWriteTime Then
+                        UpdateCount += 1
+                    End If
+                Next
+            Next
+        Next
+
+
+
+        'for each possible macro search file
+        Dim sTime As DateTime = Now
+        Dim tSpan As TimeSpan
+        Dim timeLeft As Integer
+        frmMStatus.Show()
+        For MacrX As Integer = CInt(MinX / 256) To CInt((MinX + MapX) / 256) - 1
+            For MacrY As Integer = CInt(MinY / 256) To CInt((MinY + MapY) / 256) - 1
+                For MacrZ As Integer = 0 To 15
+                    'Updates frmMStatus
+                    With frmMStatus
+                        .lblTask.Text = "Building macro search files. Please Wait."
+                        .pbarMStatus.Minimum = 0
+                        .pbarMStatus.Maximum = UpdateCount
+                        Dim a As Integer = .pbarMStatus.Value
+                        tSpan = Now - sTime
+                        If .pbarMStatus.Value = 0 Then
+                            .lblTimeLeft.Text = "Time Left: Calculating"
+                        Else
+                            timeLeft = CInt((tSpan.TotalMinutes / .pbarMStatus.Value) * (UpdateCount - .pbarMStatus.Value))
+                            If timeLeft > 0 Then
+                                .lblTimeLeft.Text = "Time Left: " & CStr(timeLeft) & " minutes"
+                            Else
+                                .lblTimeLeft.Text = "Time Left: Less than 1 minute"
+                            End If
+                        End If
+                        .Update()
+                    End With
+                    'converts the z coordinate to a string
+                    If MacrZ < 10 Then zStr = "0" & CStr(MacrZ) Else zStr = CStr(MacrZ)
+                    MFO.NameBase = CStr(MacrX) & CStr(MacrY) & zStr
+                    'gets the map data
+                    Path = MapsDir.FullName & "\" & CStr(MacrX) & CStr(MacrY) & zStr & ".map"
+                    sMapX = MacrX * 256
+                    sMapY = MacrY * 256
+                    sMapZ = MacrZ
+
+                    'if the mdat file is missing or out of date then
+                    mapInfo = New FileInfo(MapsDir.FullName & MacrX & MacrY & zStr & ".map")
+                    mdatInfo = New FileInfo(MacroSearchDir & MacrX & MacrY & zStr & ".mdat")
+                    If Not mdatInfo.Exists Or mapInfo.LastWriteTime > mdatInfo.LastWriteTime Then
+
+                        'clears the current MFO data
+                        ReDim MFO.MacroTiles(255) '256 16x16 Tiles
+                        ReDim MFO.Map(65535) 'The tibia style map that records which tiles are assigned to which hubs
+
+                        For tile As Integer = 0 To UBound(MFO.Map)
+                            If MFO.Map(tile) = 0 Then 'its unassigned
+                                'Gets the MacroTile number(0-255 proceeding north to south then west to east)
+                                MacroTileNumber = CInt(Math.Truncate(Math.Truncate(tile / 256) / 16) * 16)
+                                MacroTileNumber += CInt(Math.Truncate((tile - (Math.Truncate(tile / 256) * 256)) / 16))
+                                If MacroTileNumber = 78 Then
+                                    Application.DoEvents()
+                                End If
+                                'Gets the hubID for the marknodes sub
+                                If MFO.MacroTiles(MacroTileNumber) Is Nothing Then
+                                    'if there are no current hubs then the hub id is 1
+                                    HubID = 1
+                                Else
+                                    'otherwise the hubid is one more than the number of current hubs
+                                    HubID = MFO.MacroTiles(MacroTileNumber).Count + 1
+                                End If
+                                'Mark all the tiles
+                                If myPathfinder.MarkNodes(tile, MFO.Map, CByte(HubID), MacroTileNumber, sMapX, sMapY, sMapZ, Me) Then
+                                    'Dimension the hub
+                                    If MFO.MacroTiles(MacroTileNumber) Is Nothing Then
+                                        ReDim MFO.MacroTiles(MacroTileNumber)(0)
+                                    Else
+                                        ReDim Preserve MFO.MacroTiles(MacroTileNumber)(UBound(MFO.MacroTiles(MacroTileNumber)) + 1)
+                                    End If
+                                    'Record the hubs coordinates
+                                    MFO.MacroTiles(MacroTileNumber)(UBound(MFO.MacroTiles(MacroTileNumber))).X = CUShort(Math.Truncate(tile / 256) + sMapX)
+                                    MFO.MacroTiles(MacroTileNumber)(UBound(MFO.MacroTiles(MacroTileNumber))).Y = CUShort(tile - ((Math.Truncate(tile / 256)) * 256) + sMapY)
+                                End If
+                            End If
+                        Next
+                        'save the macrofileobject
+                        SaveMacroFileObj(MFO)
+                        'increments the progress bar
+                        frmMStatus.pbarMStatus.Increment(1)
+                    End If
+                Next
+            Next
+        Next
+        'find children
+
+        'Private Structure MacroFileObj
+        '    Dim Map() As Byte
+        '    Dim MacroTiles()() As HubObj
+        'End Structure
+        'Private Structure HubObj '4 bytes + (number of child hubs * 6 bytes)
+        '    Dim X As UInt16 'The x coordinate of the hub
+        '    Dim Y As UInt16 'The y coordinate of the hub
+        '    Dim ChildHubX() As UInt16 'The array of X coordinates for children hubs
+        '    Dim ChildHubY() As UInt16 'The array of Y coordinates for children hubs
+        '    Dim ChildHubDist() As UInt16 'The array of distances to children hubs from this hub
+        'End Structure
+        frmMStatus.Hide()
+    End Sub
+
+
+
     Public Sub SetPZLock(ByVal Duration As Long)
         'turns on a pzlock for a set amount of time, this could be improved
         isPZlocked = True

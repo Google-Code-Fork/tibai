@@ -76,10 +76,9 @@ Public Class MapData
     Private mapsPointer As Integer 'the position of the currently loaded map
     Private SmapsLoaded(9)() As Byte 'contains extra map tile details
     Private SmapsDetail(9) As String 'the file name of the map in smapsloaded
-    Private SmapsPointer As Integer 'the position of the currently loaded special map
+    Private SmapsPointer As Integer 'the position of the most recently loaded special info map
 
     'Objects that hold macro file data
-
     Private Structure MacroFileObj '256 bytes + Hubs
         Dim Map() As Byte
         Dim NameBase As String
@@ -90,6 +89,7 @@ Public Class MapData
         Dim Y As UInt16 'The y coordinate of the hub
         Dim ChildHubX() As UInt16 'The array of X coordinates for children hubs
         Dim ChildHubY() As UInt16 'The array of Y coordinates for children hubs
+        Dim ChildHubZ() As Byte 'The array of Z coordinates for children hubs
         Dim ChildHubDist() As UInt16 'The array of distances to children hubs from this hub
     End Structure
 
@@ -424,10 +424,50 @@ Public Class MapData
     End Sub
 
     'MacroSearch Related Methods
-    Private Sub LoadMacroFile(ByVal X As Integer, ByVal Y As Integer, ByVal Z As Integer)
-        'Loads the data in a .mdat file for use in tibia wide searches
 
-    End Sub
+    Private Function LoadMacroFileObj(ByVal mdatpath As String) As MacroFileObj
+        Dim fstream As FileStream
+
+        ReDim LoadMacroFileObj.MacroTiles(255)
+        ReDim LoadMacroFileObj.Map(65535)
+        LoadMacroFileObj.NameBase = Left(mdatpath, mdatpath.Count - 5)
+        fstream = New FileStream(LoadMacroFileObj.NameBase & ".mmap", FileMode.Open)
+        fstream.Read(LoadMacroFileObj.Map, 0, CInt(fstream.Length))
+        fstream.Flush()
+        fstream.Close()
+        fstream = New FileStream(mdatpath, FileMode.Open)
+        'gets the number of hubs in each macrotile
+        For i As Integer = 0 To 255
+            ReDim LoadMacroFileObj.MacroTiles(i)(fstream.ReadByte)
+        Next
+
+        Dim int As Integer
+        'gets the hub details
+        For Each mtile In LoadMacroFileObj.MacroTiles
+            For i As Integer = 0 To UBound(mtile)
+                mtile(i).X = CUShort((fstream.ReadByte * 256) + fstream.ReadByte)
+                mtile(i).Y = CUShort((fstream.ReadByte * 256) + fstream.ReadByte)
+                int = fstream.ReadByte
+                'resizes the child hub arrays
+                If int > 0 Then
+                    int -= 1
+                    ReDim mtile(i).ChildHubX(int)
+                    ReDim mtile(i).ChildHubY(int)
+                    ReDim mtile(i).ChildHubZ(int)
+                    ReDim mtile(i).ChildHubDist(int)
+                    'fills in the child hub details
+                    For n As Integer = 0 To int
+                        mtile(i).ChildHubX(n) = CUShort((fstream.ReadByte * 256) + fstream.ReadByte)
+                        mtile(i).ChildHubY(n) = CUShort((fstream.ReadByte * 256) + fstream.ReadByte)
+                        mtile(i).ChildHubZ(n) = CByte(fstream.ReadByte)
+                        mtile(i).ChildHubDist(n) = CUShort((fstream.ReadByte * 256) + fstream.ReadByte)
+                    Next
+                End If
+            Next
+        Next
+        fstream.Flush()
+        fstream.Close()
+    End Function
     Private Sub SaveMacroFileObj(ByRef MFO As MacroFileObj)
         'Saves a .mdat files and .mmap files in the appropriate format
         Dim ByteArray() As Byte
@@ -438,7 +478,7 @@ Public Class MapData
             For Each Hub In MacroTile
                 NumberofBytes += 5 'adds 5 bytes for the hub
                 If Not Hub.ChildHubX Is Nothing Then
-                    NumberofBytes += UBound(Hub.ChildHubX) * 6 'adds 6 bytes per child
+                    NumberofBytes += UBound(Hub.ChildHubX) * 7 'adds 7 bytes per child
                 End If
             Next
         Next
@@ -486,6 +526,9 @@ Public Class MapData
                         'Adds the low byte of this child hubs y position
                         ByteArray(ByteArrayPos) = CByte(MacroTile(i).ChildHubY(n) - (ByteArray(ByteArrayPos - 1) * 256))
                         ByteArrayPos += 1
+                        'Adds this child hubs z position
+                        ByteArray(ByteArrayPos) = MacroTile(i).ChildHubZ(n)
+                        ByteArrayPos += 1
                         'Adds the high byte of this child hubs distance
                         ByteArray(ByteArrayPos) = CByte(Math.Truncate(MacroTile(i).ChildHubDist(n) / 256))
                         ByteArrayPos += 1
@@ -513,7 +556,6 @@ Public Class MapData
 
     End Sub
     Private Sub UpdateMacroNodes()
-        Exit Sub
         'Checks for missing or outdated macro search files and updates them
         Dim Path As String
         Dim MFO As MacroFileObj
@@ -638,19 +680,29 @@ Public Class MapData
                 Next
             Next
         Next
-        'find children
 
-        'Private Structure MacroFileObj
-        '    Dim Map() As Byte
-        '    Dim MacroTiles()() As HubObj
-        'End Structure
-        'Private Structure HubObj '4 bytes + (number of child hubs * 6 bytes)
-        '    Dim X As UInt16 'The x coordinate of the hub
-        '    Dim Y As UInt16 'The y coordinate of the hub
-        '    Dim ChildHubX() As UInt16 'The array of X coordinates for children hubs
-        '    Dim ChildHubY() As UInt16 'The array of Y coordinates for children hubs
-        '    Dim ChildHubDist() As UInt16 'The array of distances to children hubs from this hub
-        'End Structure
+        'Populates the children list
+        'For each .mdat file
+        Dim mdatlist As System.Collections.ObjectModel.ReadOnlyCollection(Of String) = My.Computer.FileSystem.GetFiles(MacroSearchDir, FileIO.SearchOption.SearchTopLevelOnly, "*.mdat")
+        For Each mdat In mdatlist
+            'Get the correspoding MacroFileObj
+            MFO = LoadMacroFileObj(mdat)
+            'For each macrotile in the file
+            For Each mtile In MFO.MacroTiles
+                'For each hub in the macro tile
+                For i As Integer = 0 To UBound(mtile)
+                    'Find adjacent macronodes
+                    '
+                    'For each adjacent macronode
+                    '   'Pathfind the distance between the two hubs
+                    '   'Add the adjacent hub as a child to the current hub
+                    '   'Add the current hub as a child to the adjacent hub
+                    'Next
+                Next
+            Next
+        Next
+
+
         frmMStatus.Hide()
     End Sub
 

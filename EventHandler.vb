@@ -15,8 +15,7 @@ Public Class EventHandler
     Public myPath As CurrentPath 'Contains info on the last movement packet sent
     Public myController As Controller 'the central class that contains all relevant objects
     Dim WithEvents client As Tibia.Objects.Client
-    Dim WithEvents proxy As Tibia.Util.Proxy
-    Public NeedsInit As Boolean
+    Dim WithEvents proxy As Tibia.Packets.Proxy
 
     Public Sub New(ByRef con As Controller)
         'sets up the global variables
@@ -25,15 +24,19 @@ Public Class EventHandler
 
         'Initializes the client and proxy objects
         client = myController.myClient
-        proxy = client.Proxy
+        proxy = client.IO.Proxy
     End Sub
 
     Public Function ReceivedMoveOutgoingPacketEvent(ByVal packets As OutgoingPacket) As Boolean Handles proxy.ReceivedMoveOutgoingPacket
-        RecordMovement(packets.ToByteArray)
+        Dim myNetMsg As New Tibia.Packets.NetworkMessage
+        packets.ToNetworkMessage(myNetMsg)
+        RecordMovement(myNetMsg.Data)
         Return True
     End Function
     Public Function ReceivedAutoWalkOutgoingPacketEvent(ByVal packets As OutgoingPacket) As Boolean Handles proxy.ReceivedAutoWalkOutgoingPacket
-        RecordMovement(packets.ToByteArray)
+        Dim myNetMsg As New Tibia.Packets.NetworkMessage
+        packets.ToNetworkMessage(myNetMsg)
+        RecordMovement(myNetMsg.Data)
         Return True
     End Function
     Public Function ReceivedTextMessageIncomingPacketEvent(ByVal packets As Tibia.Packets.IncomingPacket) As Boolean Handles proxy.ReceivedTextMessageIncomingPacket
@@ -94,18 +97,9 @@ Public Class EventHandler
         Return True
     End Function
 
-    Public Function ReceivedMessageFromServerEvent() As Boolean Handles proxy.ReceivedMessageFromServer
-
-        If client.LoggedIn Then
-            If NeedsInit Then
-                Application.DoEvents()
-                NeedsInit = False
-                myController.myPlayer = myController.myClient.GetPlayer
-                myController.myMovement = New Movement(myController.myClient, myController.myPlayer, myController)
-            End If
-        Else
-            NeedsInit = True
-        End If
+    Public Function PlayerLoginEvent() As Boolean Handles proxy.PlayerLogin
+        myController.myPlayer = myController.myClient.GetPlayer
+        myController.myMovement = New Movement(myController.myClient, myController.myPlayer, myController)
         Return True
     End Function
 

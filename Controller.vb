@@ -5,7 +5,7 @@ Imports Tibia.Util
 Public Class Controller
     Public myClient As Client = ClientChooser.ShowBox()
     Public myPlayer As Player
-    Public myEvents As tibAI.EventHandler
+    Public myEvents As EventHandler
     Public myPathfinder As PathFinder
     Public myMovement As Movement
     Public Sub New()
@@ -19,10 +19,10 @@ Public Class Controller
         'If the selected client is not logged in it starts the proxy 
         'and event handler
         If myClient.LoggedIn = False Then
-            myClient.StartProxy()
+            myClient.IO.StartProxy()
             myEvents = New tibAI.EventHandler(Me)
         End If
-        myPathfinder = New PathFinder(myClient.Process.Handle, 100)
+        myPathfinder = New PathFinder(myClient.Process.Handle, 80)
 
     End Sub
 

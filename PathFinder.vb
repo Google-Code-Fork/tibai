@@ -143,8 +143,6 @@
 
                             If cMCost < &HFF Then
                                 AddtoList(cNodeX, cNodeY, CByte(cMCost), CByte(8 - i), ScoreMap(tNodeX, tNodeY, 0) + (cMCost * DiagMod), GetH(cNodeX, cNodeY, EndX, EndY))
-                            Else
-                                Application.DoEvents()
                             End If
                         End If
                     End If
@@ -511,5 +509,82 @@
         Loop
         Return True 'A macro node has been defined 
         'this function evaluates as false if the starting tile is unwalkable
+    End Function
+    Public Function GetChildren(ByVal ChildX() As Integer, ByVal ChildY() As Integer, ByVal StX As Integer, ByVal StY As Integer, ByVal StZ As Integer) As Boolean
+        'returns an array of children hubs
+        Dim tNode, tNodeX, tNodeY, cNodeX, cNodeY, cMCost, DiagMod As Integer
+        Dim HubsX(0), HubsY(0) As Integer
+
+        SetupGlobals() 'prepares the global variables
+        'create the open list of nodes, initially containing only our starting node
+        '   reduces the coordinates to my 1792x2048 map
+        StX = StX - MinX
+        StY = StY - MinY
+
+        myMapData.GetTileHub(HubsX(0), HubsY(0), StX, StY, StZ)
+        AddtoList(StX, StY, 0, 4, 0, 0)
+        OpenedCount += 1
+        'while (we have not reached our goal) {
+        Do While pathfound = False And OpenList.length > 0
+            'consider the best node in the open list (the node with the lowest f value)
+            tNode = OpenList.GetFromTop
+            tNodeX = CInt(Math.Truncate(tNode / MapX))
+            tNodeY = tNode - (tNodeX * MapX)
+
+            'goal
+            If OpenList.length > 100 Then
+                'then we're done
+                Exit Do
+            Else 'else {
+
+                'move the current node to the closed list and consider all of its neighbors
+                NodeMap(tNodeX, tNodeY, 2) = 2 'closes node
+                myMapData.GetTileCost(tNodeX + MinX, tNodeY + MinY, StZ, &HBA, True)
+                'for (each neighbor) {
+                For i As Integer = 0 To 8
+                    If Not i = 4 Then '4 is tnode so skip it
+                        'sets the diagonal modifier to either 300% or 100%
+                        If i = 0 Or i = 2 Or i = 6 Or i = 8 Then DiagMod = 3 Else DiagMod = 1
+                        'gets child i's x and y coordinates
+                        cNodeX = tNodeX + (CInt(Math.Truncate(i / 3)) - 1)
+                        cNodeY = tNodeY + (i - (CInt(Math.Truncate(i / 3)) * 3) - 1)
+                        'verifies this child node is on the map
+                        If cNodeX > -1 And cNodeX < MapX And cNodeY > -1 And cNodeY < MapY Then
+                            OpenedCount += 1 'counts the number of nodes assessed
+                            'if (this neighbor is in the closed or opened list 
+                            If Not NodeMap(cNodeX, cNodeY, 2) = 0 Then
+                                'and our current g value is lower) {
+                                If ScoreMap(tNodeX, tNodeY, 0) + (NodeMap(cNodeX, cNodeY, 0) * DiagMod) < ScoreMap(cNodeX, cNodeY, 0) And NodeMap(cNodeX, cNodeY, 2) = 1 Then
+                                    'update the neighbor with the new, lower, g value 
+                                    ScoreMap(cNodeX, cNodeY, 0) = ScoreMap(tNodeX, tNodeY, 0) + (NodeMap(cNodeX, cNodeY, 0) * DiagMod)
+                                    'change the neighbor's parent to our current node
+                                    '0,1,2 'if the child is in the parents 1 position
+                                    '3,X,5 'then the parent is in the childs 7 position
+                                    '6,7,8 'so 8-i is the appropriate parent position for child(i)
+                                    '      'since 8-1=7 and 8-7=1
+                                    NodeMap(cNodeX, cNodeY, 1) = CByte(8 - i)
+                                    'if the child was open then resort the binary heap
+                                    If NodeMap(cNodeX, cNodeY, 2) = 1 Then
+                                        'the item in the heap is equal to the numerical position of the node on the map the value is the Gscore +hscore
+                                        OpenList.ReSortItem((cNodeX * MapX) + cNodeY, ScoreMap(cNodeX, cNodeY, 0) + ScoreMap(cNodeX, cNodeY, 1))
+                                    End If
+                                End If
+                            Else 'else this neighbor is not in either the open or closed list {
+                                'add the neighbor to the open list and set its g value
+                                cMCost = myMapData.GetTileCost(cNodeX + MinX, cNodeY + MinY, StZ, &HD2, True)
+                                'if this tile is walkable then add it to the list
+                                If cMCost < &HFF Then
+                                    'updates the average movement cost stored in returnvar
+                                    AddtoList(cNodeX, cNodeY, CByte(cMCost), CByte(8 - i), ScoreMap(tNodeX, tNodeY, 0) + (cMCost * DiagMod), 0)
+                                End If
+                            End If
+                        End If
+                    End If
+                Next
+
+            End If
+
+        Loop
+
     End Function
 End Class

@@ -51,7 +51,7 @@ Public Class Movement
             If Not skipsearch = True Then
                 tpath = myController.myPathfinder.GetPath(myPlayer.X, myPlayer.Y, myPlayer.Z, Queue(QueuePtr, 0), Queue(QueuePtr, 1), Queue(QueuePtr, 2))
                 If tpath Is Nothing Then StatusMessage = "Path Not Found" Else StatusMessage = "Path Found"
-                StatusMessage &= ": " & myController.myPathfinder.OpenedCount & " nodes searched in " & myController.myPathfinder.LastActionTime & " milliseconds with " & myController.myPathfinder.HeuristicBaseCost & " as the heuristic."
+                StatusMessage &= ": " & myController.myPathfinder.OpenedCount & " nodes searched in " & CStr(myController.myPathfinder.LastActionTime / 1000) & " seconds with " & myController.myPathfinder.HeuristicBaseCost & " as the heuristic."
                 SendStatustoClient(StatusMessage)
                 'exits if a path isn't found
                 If tpath Is Nothing Then Exit Do
@@ -87,7 +87,6 @@ Public Class Movement
                     'players actual walking speed
                     n += 1
                     If n = CInt(30 * (CDec(myPlayer.WalkSpeed) / CDec(290))) Then Exit For
-                    Application.DoEvents()
                     Threading.Thread.Sleep(500) 'thread sleeps for .5 seconds
                 Loop
                 'Goto Next step or finish

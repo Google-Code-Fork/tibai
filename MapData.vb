@@ -1,4 +1,4 @@
-﻿Imports Tibia.Memory
+﻿Imports Tibia.Util.Memory
 Imports System.Threading
 Imports System.IO
 'This class manages threads for the mapdata class
@@ -10,6 +10,11 @@ Public Class MapDataController
     Public Sub New(ByVal Hndl As System.IntPtr, ByRef SearchAlg As PathFinder)
         WaitforControl()
         myMapData = New MapData(Hndl, SearchAlg)
+        ReleaseControl()
+    End Sub
+    Public Sub GetTileHub(ByRef HubX As Integer, ByRef HubY As Integer, ByVal X As Integer, ByVal Y As Integer, ByVal Z As Integer)
+        WaitforControl()
+        myMapData.GetTileHub(HubX, HubY, X, Y, Z)
         ReleaseControl()
     End Sub
     Public Function GetTileCost(ByVal Tx As Integer, ByVal Ty As Integer, ByVal Tz As Integer, ByVal color As Byte, ByVal blockSpecial As Boolean) As Byte
@@ -77,6 +82,8 @@ Public Class MapData
     Private SmapsLoaded(9)() As Byte 'contains extra map tile details
     Private SmapsDetail(9) As String 'the file name of the map in smapsloaded
     Private SmapsPointer As Integer 'the position of the most recently loaded special info map
+    Private MFOs(9) As MacroFileObj 'a cache of macro file objects 
+    Private MFOsPointer As Integer 'the pointer to the currently loaded MFO
 
     'Objects that hold macro file data
     Private Structure MacroFileObj '256 bytes + Hubs
@@ -113,7 +120,16 @@ Public Class MapData
         Handle = Hndl
         myPathfinder = SearchAlg
         CreateMapDirectories()
-        UpdateMacroNodes()
+        'UpdateMacroNodes()
+    End Sub
+    Public Sub GetTileHub(ByRef HubX As Integer, ByRef HubY As Integer, ByVal X As Integer, ByVal Y As Integer, ByVal Z As Integer)
+        'get the namebase string
+        Dim namebase As String
+        namebase = CStr(Math.Truncate(X / 256))
+        namebase += CStr(Math.Truncate(Y / 256))
+        If Z < 10 Then namebase += "0"
+        namebase += CStr(Z)
+        namebase = MacroSearchDir & namebase
     End Sub
     Public Function GetTileCost(ByVal Tx As Integer, ByVal Ty As Integer, ByVal Tz As Integer, ByVal color As Byte, ByVal blockSpecial As Boolean) As Byte
         'Returns the movement cost of a given tile- default is same as unexplored
@@ -160,7 +176,7 @@ Public Class MapData
                 ' *area (which is highly likely) I don't have to keep loading
                 ' *maps. (this feature could cause a problem if tibia updates
                 ' *the maps with new data after they are loaded into memory)
-                isload = isLoaded(MapFilename, False)
+                isload = isLoaded(MapFilename, False, False)
                 If isload = -1 Then
                     'if not already loaded then load the map file into one of the load slots
                     fStream = New System.IO.FileStream(MapFilename, IO.FileMode.Open)
@@ -173,7 +189,7 @@ Public Class MapData
                     'advance the pointer
                     If mapsPointer = 9 Then mapsPointer = 0 Else mapsPointer += 1
                 End If
-                isload = isLoaded(MapFilename, False)
+                isload = isLoaded(MapFilename, False, False)
                 GetTileCost = mapsLoaded(isload)(tOffset + &H10000)
             End If
         End If
@@ -212,7 +228,7 @@ Public Class MapData
                 ' *area (which is highly likely) I don't have to keep loading
                 ' *maps. (this feature could cause a problem if tibia updates
                 ' *the maps with new data after they are loaded into memory)
-                isload = isLoaded(MapFilename, False)
+                isload = isLoaded(MapFilename, False, False)
                 If isload = -1 Then
                     'if not already loaded then load the map file into one of the load slots
                     fStream = New System.IO.FileStream(MapFilename, IO.FileMode.Open)
@@ -225,7 +241,7 @@ Public Class MapData
                     'advance the pointer
                     If mapsPointer = 9 Then mapsPointer = 0 Else mapsPointer += 1
                 End If
-                isload = isLoaded(MapFilename, False)
+                isload = isLoaded(MapFilename, False, False)
                 GetTileID = mapsLoaded(isload)(tOffset + &H10000)
             End If
         End If
@@ -249,12 +265,19 @@ Public Class MapData
             End If
         Next
     End Function
-    Private Function isLoaded(ByRef filepath As String, ByVal isSpecial As Boolean) As Integer
+    Private Function isLoaded(ByRef filepath As String, ByVal isSpecial As Boolean, ByVal isMFO As Boolean) As Integer
         ' = -1 if not loaded 0 - 9 if it is loaded
         isLoaded = -1
         If isSpecial Then 'checks for special maps
             For i As Integer = 0 To UBound(SmapsDetail)
                 If filepath = SmapsDetail(i) Then
+                    isLoaded = i
+                    Exit For
+                End If
+            Next
+        ElseIf isMFO Then 'checks for MFOs
+            For i As Integer = 0 To UBound(MFOs)
+                If filepath = MFOs(i).NameBase Then
                     isLoaded = i
                     Exit For
                 End If
@@ -306,7 +329,7 @@ Public Class MapData
 
         Dim isload As Integer
         'checks to see if the file is loaded
-        isload = isLoaded(fName, True)
+        isload = isLoaded(fName, True, False)
         If isload = -1 Then 'its not loaded
             'if the file exists
             If My.Computer.FileSystem.FileExists(fName) Then
@@ -379,7 +402,7 @@ Public Class MapData
             WriteByte(Handle, Maps(inmem) + MapOffset + tOffset + &H10000, &HFF)
         End If
         'checks to see if the file is loaded
-        isload = isLoaded(sMapFilename, True)
+        isload = isLoaded(sMapFilename, True, False)
         'if the file is not loaded then
         If isload = -1 Then
             'saves the previous smap
@@ -438,25 +461,25 @@ Public Class MapData
         fstream = New FileStream(mdatpath, FileMode.Open)
         'gets the number of hubs in each macrotile
         For i As Integer = 0 To 255
-            ReDim LoadMacroFileObj.MacroTiles(i)(fstream.ReadByte)
+            ReDim LoadMacroFileObj.MacroTiles(i)(fstream.ReadByte - 1)
         Next
 
-        Dim int As Integer
+        Dim numchildren As Integer
         'gets the hub details
         For Each mtile In LoadMacroFileObj.MacroTiles
             For i As Integer = 0 To UBound(mtile)
                 mtile(i).X = CUShort((fstream.ReadByte * 256) + fstream.ReadByte)
                 mtile(i).Y = CUShort((fstream.ReadByte * 256) + fstream.ReadByte)
-                int = fstream.ReadByte
+                numchildren = fstream.ReadByte
                 'resizes the child hub arrays
-                If int > 0 Then
-                    int -= 1
-                    ReDim mtile(i).ChildHubX(int)
-                    ReDim mtile(i).ChildHubY(int)
-                    ReDim mtile(i).ChildHubZ(int)
-                    ReDim mtile(i).ChildHubDist(int)
+                If numchildren > 0 Then
+                    numchildren -= 1
+                    ReDim mtile(i).ChildHubX(numchildren)
+                    ReDim mtile(i).ChildHubY(numchildren)
+                    ReDim mtile(i).ChildHubZ(numchildren)
+                    ReDim mtile(i).ChildHubDist(numchildren)
                     'fills in the child hub details
-                    For n As Integer = 0 To int
+                    For n As Integer = 0 To numchildren
                         mtile(i).ChildHubX(n) = CUShort((fstream.ReadByte * 256) + fstream.ReadByte)
                         mtile(i).ChildHubY(n) = CUShort((fstream.ReadByte * 256) + fstream.ReadByte)
                         mtile(i).ChildHubZ(n) = CByte(fstream.ReadByte)
@@ -691,9 +714,10 @@ Public Class MapData
             For Each mtile In MFO.MacroTiles
                 'For each hub in the macro tile
                 For i As Integer = 0 To UBound(mtile)
-                    'Find adjacent macronodes
-                    '
-                    'For each adjacent macronode
+                    'Find adjacent hubs
+                    Dim childx(1), childy(1) As Integer
+                    myPathfinder.GetChildren(childx, childy, mtile(i).X, mtile(i).Y, CInt(Right(MFO.NameBase, 2)))
+                    'For each adjacent hub
                     '   'Pathfind the distance between the two hubs
                     '   'Add the adjacent hub as a child to the current hub
                     '   'Add the current hub as a child to the adjacent hub

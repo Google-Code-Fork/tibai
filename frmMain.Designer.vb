@@ -34,6 +34,8 @@ Partial Class frmMain
         Me.Button1 = New System.Windows.Forms.Button
         Me.Button2 = New System.Windows.Forms.Button
         Me.btnTest1 = New System.Windows.Forms.Button
+        Me.Button3 = New System.Windows.Forms.Button
+        Me.cmdtest1 = New System.Windows.Forms.Button
         Me.SuspendLayout()
         '
         'lblX
@@ -140,11 +142,31 @@ Partial Class frmMain
         Me.btnTest1.Text = "XYZ Set 1"
         Me.btnTest1.UseVisualStyleBackColor = True
         '
+        'Button3
+        '
+        Me.Button3.Location = New System.Drawing.Point(12, 231)
+        Me.Button3.Name = "Button3"
+        Me.Button3.Size = New System.Drawing.Size(75, 23)
+        Me.Button3.TabIndex = 13
+        Me.Button3.Text = "explore"
+        Me.Button3.UseVisualStyleBackColor = True
+        '
+        'cmdtest1
+        '
+        Me.cmdtest1.Location = New System.Drawing.Point(93, 231)
+        Me.cmdtest1.Name = "cmdtest1"
+        Me.cmdtest1.Size = New System.Drawing.Size(10, 10)
+        Me.cmdtest1.TabIndex = 14
+        Me.cmdtest1.Text = "."
+        Me.cmdtest1.UseVisualStyleBackColor = True
+        '
         'frmMain
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
         Me.ClientSize = New System.Drawing.Size(300, 266)
+        Me.Controls.Add(Me.cmdtest1)
+        Me.Controls.Add(Me.Button3)
         Me.Controls.Add(Me.btnTest1)
         Me.Controls.Add(Me.Button2)
         Me.Controls.Add(Me.Button1)
@@ -175,5 +197,7 @@ Partial Class frmMain
     Friend WithEvents Button1 As System.Windows.Forms.Button
     Friend WithEvents Button2 As System.Windows.Forms.Button
     Friend WithEvents btnTest1 As System.Windows.Forms.Button
+    Friend WithEvents Button3 As System.Windows.Forms.Button
+    Friend WithEvents cmdtest1 As System.Windows.Forms.Button
 
 End Class

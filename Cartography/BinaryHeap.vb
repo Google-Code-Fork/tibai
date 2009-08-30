@@ -1,15 +1,18 @@
 ﻿Public Class BinaryHeap
-    Public MaxSize As Integer = 10000
+    'The BinaryHeap class is used in the pathfinder processes of the cartographer class
+    'for sorting open nodes.
+
+    Public MaxSize As Integer
     Public ItemArr() As Integer
     Public ValueArr() As Integer
     Public length As Integer = 0
-    Public Sub New()
+    Public Sub New(ByVal maxvalues As Integer)
+        MaxSize = maxvalues
         ReDim ItemArr(MaxSize)
         ReDim ValueArr(MaxSize)
     End Sub
     Public Function GetFromTop() As Integer
         Dim returnVar As Integer = ItemArr(1)
-        'Dim returnVar As Integer = ValueArr(1)
         If length = 0 Then
             Return 0
             Exit Function
@@ -58,7 +61,7 @@
         Dim pos As Integer = length
         Dim parent As Integer
         Do While Not pos = 1 'as long as we are not at the first position
-            parent = CInt(Int(pos / 2)) 'identify the parent
+            parent = CInt(Math.Truncate(Int(pos / 2))) 'identify the parent
             If ValueArr(pos) <= ValueArr(parent) Then 'if the parent is smaller
                 Swap(parent, pos) 'swap the parent with the new item
                 pos = parent 'old parent position becomes the new current position
@@ -86,7 +89,7 @@
         Dim parent As Integer
         'Starts trying to bubble it upwards by comparing it against its parent
         Do While Not pos = 1
-            parent = CInt(Int(pos / 2))
+            parent = CInt(Math.Truncate(Int(pos / 2)))
             If ValueArr(pos) <= ValueArr(parent) Then
                 Swap(parent, pos)
                 pos = parent

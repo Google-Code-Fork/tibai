@@ -13,17 +13,15 @@ Public Class EventHandler
         Dim PathLength As Integer 'The number of steps in the path
     End Structure
     Public myPath As CurrentPath 'Contains info on the last movement packet sent
-    Public myController As Controller 'the central class that contains all relevant objects
     Dim WithEvents client As Tibia.Objects.Client
     Dim WithEvents proxy As Tibia.Packets.Proxy
 
-    Public Sub New(ByRef con As Controller)
+    Public Sub New()
         'sets up the global variables
-        myController = con
         ReDim myPath.Path(10)
 
         'Initializes the client and proxy objects
-        client = myController.myClient
+        client = myClient
         proxy = client.IO.Proxy
     End Sub
 
@@ -59,7 +57,7 @@ Public Class EventHandler
             For i As Integer = 0 To myPath.PathLength - 1
                 'if the current location is found it adds the next step and 
                 'exits the for-next loop
-                If myController.myPlayer.X = tempx And myController.myPlayer.Y = tempy Then
+                If myPlayer.X = tempx And myPlayer.Y = tempy Then
                     'applies the step on the x coordinate
                     If myPath.Path(i) < 3 Or myPath.Path(i) = 8 Then tempx += 1
                     If myPath.Path(i) > 3 And myPath.Path(i) < 7 Then tempx -= 1
@@ -80,16 +78,16 @@ Public Class EventHandler
             Dim tileType As Byte
             If p.Message = "You are not invited." Then
                 'its a private door
-                tileType = 1
+                tileType = PrivateDoor
             Else
                 'its a PZ lock
                 'sets a 60 second PZLocktimer if the character is PZLocked
-                myController.myPathfinder.myMapData.SetPZLock(60) '1 = 1 second
+                myCartographer.myMapData.SetPZLock(60) '1 = 1 second
 
-                tileType = 3
+                tileType = SafeZone
             End If
             'flags a tile as special
-            myController.myPathfinder.myMapData.AddTiletoList(tempx, tempy, tempz, tileType)
+            myCartographer.myMapData.MarkAsSpecial(tempx, tempy, tempz, tileType)
 
         End If
 
@@ -98,40 +96,40 @@ Public Class EventHandler
     End Function
 
     Public Function PlayerLoginEvent() As Boolean Handles proxy.PlayerLogin
-        myController.myPlayer = myController.myClient.GetPlayer
-        myController.myMovement = New Movement(myController.myClient, myController.myPlayer, myController)
+        myPlayer = myClient.GetPlayer
+        myMovement = New Movement()
         Return True
     End Function
 
     Private Sub RecordMovement(ByVal data() As Byte)
         'This function handles outgoing movement events
         'First it records the originating location
-        myPath.StartLocation_X = myController.myPlayer.X
-        myPath.StartLocation_Y = myController.myPlayer.Y
-        myPath.StartLocation_Z = myController.myPlayer.Z
+        myPath.StartLocation_X = myPlayer.X
+        myPath.StartLocation_Y = myPlayer.Y
+        myPath.StartLocation_Z = myPlayer.Z
         myPath.PathLength = 1 'sets the path length to 1 by default
         'fills the packet with path data based on the type of packet
         '100 = multimove packet
-        If data(0) = 100 Then
-            myPath.PathLength = data(1) - 1
-            For i As Integer = 2 To UBound(data)
-                myPath.Path(i - 2) = data(i)
+        If data(0 + dataOffset) = 100 Then
+            myPath.PathLength = data(1 + dataOffset) - 1
+            For i As Integer = 2 + dataOffset To UBound(data)
+                myPath.Path(i - 2 - dataOffset) = data(i)
             Next
-        ElseIf data(0) = 101 Then
+        ElseIf data(0 + dataOffset) = 101 Then
             myPath.Path(0) = 3 'up
-        ElseIf data(0) = 102 Then
+        ElseIf data(0 + dataOffset) = 102 Then
             myPath.Path(0) = 1 'right
-        ElseIf data(0) = 103 Then
+        ElseIf data(0 + dataOffset) = 103 Then
             myPath.Path(0) = 7 'down
-        ElseIf data(0) = 104 Then
+        ElseIf data(0 + dataOffset) = 104 Then
             myPath.Path(0) = 5 'left
-        ElseIf data(0) = 106 Then
+        ElseIf data(0 + dataOffset) = 106 Then
             myPath.Path(0) = 2 'up-right
-        ElseIf data(0) = 107 Then
+        ElseIf data(0 + dataOffset) = 107 Then
             myPath.Path(0) = 8 'down-right
-        ElseIf data(0) = 108 Then
+        ElseIf data(0 + dataOffset) = 108 Then
             myPath.Path(0) = 6 'down-left
-        ElseIf data(0) = 109 Then
+        ElseIf data(0 + dataOffset) = 109 Then
             myPath.Path(0) = 4 'up-left
         End If
     End Sub

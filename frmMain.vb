@@ -1,11 +1,13 @@
 ﻿
 Public Class frmMain
-    Public myController As New Controller()
+
     Public XQueue(0), YQueue(0), ZQueue(0) As Integer
 
     Private Sub frmMain_Load(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles MyBase.Load
-
-
+        myController = New Controller()
+    End Sub
+    Private Sub frmMain_FormClosing(ByVal sender As Object, ByVal e As System.Windows.Forms.FormClosingEventArgs) Handles Me.FormClosing
+        If Not DataMiner Is Nothing Then DataMiner.Abort()
     End Sub
 
     Private Sub btnAddtoList_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnAddtoList.Click
@@ -46,9 +48,9 @@ Public Class frmMain
     End Sub
 
     Private Sub Button1_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles Button1.Click
-        txtX.Text = CStr(myController.myPlayer.X)
-        txtY.Text = CStr(myController.myPlayer.Y)
-        txtZ.Text = CStr(myController.myPlayer.Z)
+        txtX.Text = CStr(myPlayer.X)
+        txtY.Text = CStr(myPlayer.Y)
+        txtZ.Text = CStr(myPlayer.Z)
 
     End Sub
 
@@ -80,6 +82,18 @@ Public Class frmMain
         XQueue(UBound(XQueue)) = 32209
         YQueue(UBound(YQueue)) = 31755
         ZQueue(UBound(ZQueue)) = 7
+    End Sub
+
+
+    Private Sub Button3_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles Button3.Click
+        Button3.Enabled = False
+        myMovement.Explore()
+        Button3.Enabled = True
+    End Sub
+
+
+    Private Sub cmdtest1_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles cmdtest1.Click
+        myCartographer.myMapData.SchedulePlayersmTile()
     End Sub
 End Class
 

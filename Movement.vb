@@ -11,13 +11,8 @@ Public Class Movement
     '7) Expand my movement class to handle all useful movements
     '8) Add the capacity to Pause a movement to be resumed later or terminate it completely
     '9) Add level-change tile mapping for searching the whole map
-    Public myController As Controller
-    Public myPlayer As Player 'the player being moved
-    Public myClient As Client 'the client being used
-    Public Sub New(ByRef Cli As Client, ByRef Pla As Player, ByRef Con As Controller)
-        myClient = Cli
-        myPlayer = Pla
-        myController = Con
+    Public Sub New()
+
     End Sub
     Public Function GotoXYZ(ByVal X As Integer, ByVal Y As Integer, ByVal Z As Integer) As Boolean
         'Goes to single XYZ coordinate
@@ -49,10 +44,10 @@ Public Class Movement
 
             'skips if a path was found from the nextdest coordinates
             If Not skipsearch = True Then
-                tpath = myController.myPathfinder.GetPath(myPlayer.X, myPlayer.Y, myPlayer.Z, Queue(QueuePtr, 0), Queue(QueuePtr, 1), Queue(QueuePtr, 2))
+                tpath = myCartographer.GetPath(myPlayer.X, myPlayer.Y, myPlayer.Z, Queue(QueuePtr, 0), Queue(QueuePtr, 1), Queue(QueuePtr, 2))
                 If tpath Is Nothing Then StatusMessage = "Path Not Found" Else StatusMessage = "Path Found"
-                StatusMessage &= ": " & myController.myPathfinder.OpenedCount & " nodes searched in " & CStr(myController.myPathfinder.LastActionTime / 1000) & " seconds with " & myController.myPathfinder.HeuristicBaseCost & " as the heuristic."
-                SendStatustoClient(StatusMessage)
+                StatusMessage &= ": " & myCartographer.OpenedCount & " nodes searched in " & CStr(myCartographer.LastActionTime / 1000) & " seconds with " & myCartographer.HeuristicBaseCost & " as the heuristic."
+                myController.SendStatustoClient(StatusMessage)
                 'exits if a path isn't found
                 If tpath Is Nothing Then Exit Do
             End If
@@ -75,10 +70,10 @@ Public Class Movement
                     If Not QueuePtr = UBound(Queue, 1) And Not isPrepared Then
                         If Not myPlayer.X = Queue(QueuePtr + 1, 0) Or Not myPlayer.Y = Queue(QueuePtr + 1, 1) Or Not myPlayer.Z = Queue(QueuePtr + 1, 2) Then
                             isPrepared = True
-                            nextpath = myController.myPathfinder.GetPath(Queue(QueuePtr, 0), Queue(QueuePtr, 1), Queue(QueuePtr, 2), Queue(QueuePtr + 1, 0), Queue(QueuePtr + 1, 1), Queue(QueuePtr + 1, 2))
+                            nextpath = myCartographer.GetPath(Queue(QueuePtr, 0), Queue(QueuePtr, 1), Queue(QueuePtr, 2), Queue(QueuePtr + 1, 0), Queue(QueuePtr + 1, 1), Queue(QueuePtr + 1, 2))
                             If nextpath Is Nothing Then StatusMessage = "Failed to Queue Next Path" Else StatusMessage = "Successfully Queued Next Path(Waiting)"
-                            StatusMessage &= ": " & myController.myPathfinder.OpenedCount & " nodes searched in " & myController.myPathfinder.LastActionTime & " milliseconds with " & myController.myPathfinder.HeuristicBaseCost & " as the heuristic."
-                            SendStatustoClient(StatusMessage)
+                            StatusMessage &= ": " & myCartographer.OpenedCount & " nodes searched in " & CStr(myCartographer.LastActionTime / 1000) & " seconds with " & myCartographer.HeuristicBaseCost & " as the heuristic."
+                            myController.SendStatustoClient(StatusMessage)
                         End If
                     End If
 
@@ -86,7 +81,7 @@ Public Class Movement
                     'this if statement adjusts that according to the 
                     'players actual walking speed
                     n += 1
-                    If n = CInt(30 * (CDec(myPlayer.WalkSpeed) / CDec(290))) Then Exit For
+                    If n = CInt(Math.Truncate(30 * (CDec(myPlayer.WalkSpeed) / CDec(290)))) Then Exit For
                     Threading.Thread.Sleep(500) 'thread sleeps for .5 seconds
                 Loop
                 'Goto Next step or finish
@@ -127,9 +122,38 @@ Public Class Movement
 
         Loop
     End Function
-    Private Sub SendStatustoClient(ByVal Msg As String)
-        Tibia.Packets.Incoming.TextMessagePacket.Send(myClient, Tibia.Packets.StatusMessage.ConsoleOrange2, Msg)
+    Public Sub Explore()
+        'Goes to every available black tile on the map
+        Dim StatusMessage As String
+        Dim myPath(,), n As Integer
+        Do
+            'gets the path
+            myPath = myCartographer.GetPathtoTileType(myPlayer.X, myPlayer.Y, myPlayer.Z, 0, &HFA)
+            If myPath Is Nothing Then Exit Sub
+            StatusMessage = ": " & myCartographer.OpenedCount & " nodes searched in " & CStr(myCartographer.LastActionTime / 1000) & " seconds with " & myCartographer.HeuristicBaseCost & " as the heuristic."
+            myController.SendStatustoClient(StatusMessage)
+            If myPlayer Is Nothing Then Exit Sub
 
+
+
+            'moves through the path
+            For i As Integer = 0 To UBound(myPath, 1)
+                'starts the player moving
+                myPlayer.GoTo_X = myPath(i, 0)
+                myPlayer.GoTo_Y = myPath(i, 1)
+                myPlayer.GoTo_Z = myPath(i, 2)
+                myPlayer.IsWalking = True
+                n = 0
+
+                'Waits
+                Do While myPlayer.GoTo_X = myPath(i, 0)
+                    Threading.Thread.Sleep(100) 'thread sleeps for .1 seconds
+                Loop
+                'Goto Next step or finish
+            Next
+
+        Loop
 
     End Sub
+    
 End Class

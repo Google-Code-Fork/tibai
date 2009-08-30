@@ -83,15 +83,14 @@
     <Import Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BinaryHeap.vb" />
+    <Compile Include="Cartography\BinaryHeap.vb" />
+    <Compile Include="Cartography\MiningQueue.vb" />
+    <Compile Include="Cartography\mTile.vb" />
+    <Compile Include="EventHandler.vb">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Globals.vb" />
     <Compile Include="Controller.vb" />
-    <Compile Include="frmMStatus.Designer.vb">
-      <DependentUpon>frmMStatus.vb</DependentUpon>
-    </Compile>
-    <Compile Include="frmMStatus.vb">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="EventHandler.vb" />
     <Compile Include="frmMain.vb">
       <SubType>Form</SubType>
     </Compile>
@@ -99,7 +98,8 @@
       <DependentUpon>frmMain.vb</DependentUpon>
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="MapData.vb" />
+    <Compile Include="Cartography\MDatObj.vb" />
+    <Compile Include="Cartography\MapData.vb" />
     <Compile Include="Movement.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
     <Compile Include="My Project\Application.Designer.vb">
@@ -116,14 +116,11 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
-    <Compile Include="PathFinder.vb" />
+    <Compile Include="Cartography\Cartographer.vb" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="frmMain.resx">
       <DependentUpon>frmMain.vb</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="frmMStatus.resx">
-      <DependentUpon>frmMStatus.vb</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="My Project\Resources.resx">
       <Generator>VbMyResourcesResXFileCodeGenerator</Generator>

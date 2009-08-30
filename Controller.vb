@@ -3,13 +3,9 @@ Imports Tibia.Objects
 Imports Tibia.Packets
 Imports Tibia.Util
 Public Class Controller
-    Public myClient As Client = ClientChooser.ShowBox()
-    Public myPlayer As Player
-    Public myEvents As EventHandler
-    Public myPathfinder As PathFinder
-    Public myMovement As Movement
-    Public Sub New()
 
+    Public Sub New()
+        myClient = ClientChooser.ShowBox()
         'Terminates if a client is not selected
         If myClient Is Nothing Then
             MsgBox("No client selected!")
@@ -20,11 +16,13 @@ Public Class Controller
         'and event handler
         If myClient.LoggedIn = False Then
             myClient.IO.StartProxy()
-            myEvents = New tibAI.EventHandler(Me)
+            myEvents = New tibAI.EventHandler()
         End If
-        myPathfinder = New PathFinder(myClient.Process.Handle, 80)
+        myCartographer = New Cartographer(80)
+        Handle = myClient.Process.Handle
 
     End Sub
+
 
     Public Sub GetXYZ()
         If myPlayer Is Nothing Then Exit Sub
@@ -32,6 +30,12 @@ Public Class Controller
     End Sub
     Public Sub SubmitQueue(ByVal WPQueue As Integer(,))
         myMovement.FollowWaypoints(WPQueue)
+    End Sub
+    Public Sub SendStatustoClient(ByVal Msg As String)
+        Tibia.Packets.Incoming.TextMessagePacket.Send(myClient, Tibia.Packets.StatusMessage.ConsoleOrange2, Msg)
+    End Sub
+    Protected Overrides Sub finalize()
+
     End Sub
 
 End Class

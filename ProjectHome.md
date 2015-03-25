@@ -1,0 +1,1 @@
+The purpose of tibAI is to create a truely sophisticated bot through the use of artificial neural networks and genetic algorithms. The goal is to create the highest level of intelligence that can be created while using the ever changing environment of Tibia as a testing ground.
